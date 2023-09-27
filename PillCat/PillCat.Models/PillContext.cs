@@ -15,7 +15,7 @@ public class PillContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<User>(entity =>
+        modelBuilder.Entity<Pill>(entity =>
         {
             entity.HasKey(entity => entity.Id);
             entity.Property(entity => entity.Id).ValueGeneratedOnAdd().IsRequired();

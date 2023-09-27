@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using PillCat.Models;
 
-namespace ihouse_backend.Controllers
+namespace PillCat.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
