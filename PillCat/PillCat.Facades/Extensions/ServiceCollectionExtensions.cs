@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using PillCat.Facades.Strategies.Interfaces;
 using PillCat.Models.Configuration;
+using PillCat.Services.Interfaces;
+using RestEase;
 using Serilog;
 using Serilog.Exceptions;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +23,8 @@ namespace PillCat.Facades.Extensions
         private const string APPLICATION_KEY = "Application";
         private const string FACADE_ASSEMBLY = "PillCat.Facades";
         private const string FACADE_BASECLASS = "BaseFacade";
+        private const string SERVICE_ASSEMBLY = "PillCat.Services";
+        private const string SERVICE_BASECLASS = "BaseService";
         private const string EXCEPTION_ASSEMBLY = "PillCat.Facades";
         private const string EXCEPTION_BASECLASS = "ExceptionHandlingStrategy";
         private const string SETTINGS_NAME = "Settings";
@@ -39,6 +43,7 @@ namespace PillCat.Facades.Extensions
             AddLogger(services, configuration);
             AddSwagger(services);
             AddSettings(services);
+            AddOcrApiClient(services);
         }
         #endregion
 
@@ -67,7 +72,8 @@ namespace PillCat.Facades.Extensions
         {
             var assembliesDictionary = new List<KeyValuePair<string, string>>
             {
-                new KeyValuePair<string, string>(FACADE_ASSEMBLY, FACADE_BASECLASS)
+                new KeyValuePair<string, string>(FACADE_ASSEMBLY, FACADE_BASECLASS),
+                new KeyValuePair<string, string>(SERVICE_ASSEMBLY, SERVICE_BASECLASS)
             };
 
             foreach (var assemblie in assembliesDictionary)
@@ -109,6 +115,12 @@ namespace PillCat.Facades.Extensions
             {
                 configuration.Bind(SETTINGS_NAME, settings);
             });
+        }
+
+        private static void AddOcrApiClient(IServiceCollection services)
+        {
+            var ocrApi = RestClient.For<IOcrClient>("https://api.ocr.space");
+            services.AddSingleton(ocrApi);
         }
 
         private static IEnumerable<Type> GetImplementatonTypes(string assemblyName, string baseClassName)

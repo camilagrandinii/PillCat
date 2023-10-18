@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PillCat.Facades.Interfaces;
 using PillCat.Models;
 
 namespace PillCat.Controllers
@@ -9,10 +10,12 @@ namespace PillCat.Controllers
     public class PillController : ControllerBase
     {
         private readonly PillContext _context;
+        private readonly IPillsFacade _pillsFacade;
 
-        public PillController(PillContext context)
+        public PillController(PillContext context, IPillsFacade pillsFacade)
         {
             _context = context;
+            _pillsFacade = pillsFacade;
         }
 
         // GET: api/Pills
@@ -98,6 +101,45 @@ namespace PillCat.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("PostPill", new { id = pill.Id }, pill);
+        }
+
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadImage()
+        {
+            try
+            {
+                // Lê o fluxo de dados da imagem a partir do corpo da solicitação
+                using (var ms = new MemoryStream())
+                {
+                    await Request.Body.CopyToAsync(ms);
+
+                    // Detecta o tipo de mídia da imagem usando a biblioteca MagicNumber
+                    var mimeType = MimeTypes.GetMimeType(Path.GetExtension("arquivo.png"));
+
+                    if (mimeType == "image/jpeg" || mimeType == "image/png")
+                    {
+                        Console.WriteLine("Imagem válida");
+                        // Continue com o processamento da imagem...
+                        return Ok("Imagem válida.");
+                    }
+                    else
+                    {
+                        return BadRequest("A imagem não está em um formato suportado.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Erro ao receber ou processar a imagem: {ex.Message}");
+            }
+        }
+
+        [HttpGet("imageText")]
+        public async Task<IActionResult> GetImageText(string url)
+        {
+            var x = await _pillsFacade.GetImageText("http://dl.a9t9.com/ocrbenchmark/eng.png");
+
+            return Ok(x);
         }
 
         // DELETE: api/Pills/5

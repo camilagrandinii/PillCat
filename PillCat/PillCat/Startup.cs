@@ -71,6 +71,8 @@ namespace PillCat
                {
                    endpoints.MapControllers();
                });
+
+            app.UseStaticFiles();
         }
     }
 }
