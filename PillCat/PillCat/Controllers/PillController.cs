@@ -169,7 +169,7 @@ namespace PillCat.Controllers
                                 streamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
                                 {
                                     Name = "file",
-                                    FileName = file.FileName
+                                    FileName = file.FileName,
                                 };
 
                                 // Adicione o StreamContent ao MultipartFormDataContent

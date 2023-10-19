@@ -20,7 +20,6 @@ namespace PillCat.Services.Interfaces
         [Post("/parse/image")]
         Task<OcrTextResponse> GetImageTextFromFile(
         [Header("apikey")] string apikey,
-        [Body] string filetype,
         [Body] MultipartFormDataContent content);
     }
 }

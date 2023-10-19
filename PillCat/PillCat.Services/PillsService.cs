@@ -19,7 +19,7 @@ namespace PillCat.Services
 
         public async Task<OcrTextResponse> GetImageTextFromFile(string mimeType, MultipartFormDataContent fileContent)
         {           
-            return await _ocrClient.GetImageTextFromFile("K81989641788957", mimeType, fileContent);
+            return await _ocrClient.GetImageTextFromFile("K81989641788957", fileContent);
         }
     }
 }
