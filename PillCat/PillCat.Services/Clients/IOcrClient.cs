@@ -6,9 +6,21 @@ namespace PillCat.Services.Interfaces
     public interface IOcrClient
     {
 
-     [Get("/parse/image")]
-        Task<OcrTextResponse> GetImageText(
-        [Header("apikey")] string authorization,
-        [Body] string url);
+        //[Post("/parse/image")]
+        //Task<OcrTextResponse> GetImageTextFromFile(
+        //[Header("apikey")] string apikey,
+        //[Body] string url);
+
+        [Get("/parse/ImageUrl?apikey={apikey}&url={url}")]
+        Task<OcrTextResponse> GetImageTextFromUrl(
+        [Path("apikey")] string apikey,
+        [Path("url")] string url
+        );
+
+        [Post("/parse/image")]
+        Task<OcrTextResponse> GetImageTextFromFile(
+        [Header("apikey")] string apikey,
+        [Body] string filetype,
+        [Body] MultipartFormDataContent content);
     }
 }

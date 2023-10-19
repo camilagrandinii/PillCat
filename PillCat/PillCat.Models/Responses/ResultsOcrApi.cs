@@ -6,7 +6,7 @@ namespace PillCat.Models.Responses
     {
 
         [JsonProperty("TextOrientation")]
-        public int TextOrientation { get; set; }
+        public string TextOrientation { get; set; }
 
         [JsonProperty("FileParseExitCode")]
         public int ExitCode { get; set; }

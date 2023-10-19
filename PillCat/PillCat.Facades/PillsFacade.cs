@@ -13,9 +13,14 @@ namespace PillCat.Facades
             _pillsService = pillsService;
         }
             
-        public async Task<OcrTextResponse> GetImageText(string url)
+        public async Task<OcrTextResponse> GetImageTextFromUrl(string url)
         {
-            return await _pillsService.GetImageText(url);
+            return await _pillsService.GetImageTextFromUrl(url);
+        }
+
+        public async Task<OcrTextResponse> GetImageTextFromFile(string mimeType, MultipartFormDataContent fileContent)
+        {
+            return await _pillsService.GetImageTextFromFile(mimeType, fileContent);
         }
     }
 }

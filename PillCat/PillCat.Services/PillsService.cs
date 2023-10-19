@@ -12,9 +12,14 @@ namespace PillCat.Services
             _ocrClient = ocrClient;
         }
 
-        public async Task<OcrTextResponse> GetImageText(string url)
+        public async Task<OcrTextResponse> GetImageTextFromUrl(string url)
         {
-            return await _ocrClient.GetImageText(url, "K81989641788957");
+            return await _ocrClient.GetImageTextFromUrl("K81989641788957", url);
+        }
+
+        public async Task<OcrTextResponse> GetImageTextFromFile(string mimeType, MultipartFormDataContent fileContent)
+        {           
+            return await _ocrClient.GetImageTextFromFile("K81989641788957", mimeType, fileContent);
         }
     }
 }

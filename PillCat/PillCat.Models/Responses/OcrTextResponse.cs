@@ -10,6 +10,9 @@ namespace PillCat.Models.Responses
         [JsonProperty("IsErroredOnProcessing")]
         public bool Error { get; set; }
 
+        [JsonProperty("OCRExitCode")]
+        public bool OcrExitCode { get; set; }
+
         [JsonProperty("ProcessingTimeInMilliseconds")]
         public int ProcessingTime { get; set; }
     }
