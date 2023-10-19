@@ -129,14 +129,16 @@ namespace PillCat.Controllers
         {
             var x = await _pillsFacade.GetImageTextFromUrl(url);
 
+            var pillInfo = await _pillsFacade.GetInformationFromPill("rivotril");
+
+            var leafletInfo = await _pillsFacade.GetLeafletFromPill("rivotril");
+
             return Ok(x);
         }
 
         /// <summary>
         /// Extracts image text using OCR API from the file image given
-        /// </summary>
-        /// <param name="mimeType"> The mime type of the image uploaded </param>
-        /// <param name="fileContent"> The image represented as a multipart content </param>
+        /// </summary>       
         /// <returns> The text contained in the image and response status info </returns>  
 
         [HttpPost("imageTextFromFile")]
@@ -201,7 +203,11 @@ namespace PillCat.Controllers
             }
         }
 
-        // DELETE: api/Pills/5
+        /// <summary>
+        /// Delete specific pill
+        /// </summary>
+        /// <param name="id"> Id of the registered pill </param>
+        /// <returns> The result of the action </returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePill(int id)
         {

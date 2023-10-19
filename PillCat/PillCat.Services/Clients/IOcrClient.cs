@@ -1,15 +1,15 @@
-﻿using PillCat.Models.Responses;
+﻿using Microsoft.AspNetCore.Mvc;
+using PillCat.Models.Responses;
 using RestEase;
 
 namespace PillCat.Services.Interfaces
 {
     public interface IOcrClient
     {
-
-        //[Post("/parse/image")]
-        //Task<OcrTextResponse> GetImageTextFromFile(
-        //[Header("apikey")] string apikey,
-        //[Body] string url);
+        [Post("/parse/image")]
+        Task<OcrTextResponse> GetImageTextFromFile(
+        [Header("apikey")] string apikey,
+        [Body] string url);
 
         [Get("/parse/ImageUrl?apikey={apikey}&url={url}")]
         Task<OcrTextResponse> GetImageTextFromUrl(

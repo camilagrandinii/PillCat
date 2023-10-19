@@ -22,5 +22,17 @@ namespace PillCat.Facades
         {
             return await _pillsService.GetImageTextFromFile(mimeType, fileContent);
         }
+
+        public async Task<dynamic> GetInformationFromPill(string name)
+        {
+            return await _pillsService.GetInformationFromPill(name);
+        }
+
+        public async Task<dynamic> GetLeafletFromPill(string name)
+        {
+            var informationFromPillResult = await _pillsService.GetInformationFromPill(name);
+
+            return await _pillsService.GetLeaflet(informationFromPillResult);
+        }
     }
 }

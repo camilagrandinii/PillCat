@@ -18,5 +18,19 @@ namespace PillCat.Facades.Interfaces
         /// <param name="fileContent"> The image represented as a multipart content </param>
         /// <returns> The text contained in the image and response status info </returns>  
         Task<OcrTextResponse> GetImageTextFromFile(string mimeType, MultipartFormDataContent fileContent);
+
+        /// <summary>
+        /// Retrives information on the given pill
+        /// </summary>
+        /// <param name="name"> Name of the pill to extract information from the ANVISA API </param>
+        /// <returns> Basic information on the Pill </returns>  
+        Task<dynamic> GetInformationFromPill(string name);
+
+        /// <summary>
+        /// Retrives pdf link to the desired leaflet
+        /// </summary>
+        /// <param name="name"> Name of the pill to extract leaflet </param>
+        /// <returns> PDF link to pill leaflet </returns>  
+        Task<dynamic> GetLeafletFromPill(string name);
     }
 }
