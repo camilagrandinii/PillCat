@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
-using System.Net.Http.Headers;
 
 namespace PillCat.Controllers
 {
@@ -45,16 +44,18 @@ namespace PillCat.Controllers
             {
                 return NotFound();
             }
+
             var pills = await _context.Pills.ToListAsync();
             Pill pill = null;
 
-            foreach (Pill u in pills)
+            Parallel.ForEach(pills, (u, state) =>
             {
                 if (u.Name == name)
                 {
-                    pill = u; break;
+                    pill = u;
+                    state.Break();
                 }
-            }
+            });
 
             if (pill == null)
             {
@@ -137,6 +138,66 @@ namespace PillCat.Controllers
         }
 
         /// <summary>
+        /// Extracts image text using OCR API from the url of a local file image given
+        /// </summary>       
+        /// <returns> The text contained in the image and response status info </returns>  
+
+        //[HttpPost("imageTextFromLocalFileUrl")]
+        //public async Task<IActionResult> GetImageTextFromLocalFileUrl()
+        //{
+        //    byte[] bytes;
+
+        //    try
+        //    {
+        //        // Verifique se o conteúdo da solicitação é um arquivo de imagem válido
+        //        if (Request.HasFormContentType && Request.Form.Files.Count > 0)
+        //        {
+        //            var file = Request.Form.Files[0];
+        //            if (file.Length > 0)
+        //            {
+        //                using (var ms = new MemoryStream())
+        //                {
+        //                    await file.CopyToAsync(ms);
+
+        //                    // Detecta o tipo de mídia da imagem usando a biblioteca MagicNumber
+        //                    var mimeType = MimeTypes.GetMimeType(Path.GetExtension(file.FileName));
+
+        //                    if (mimeType == "image/jpeg" || mimeType == "image/png")
+        //                    {
+        //                        Console.WriteLine("Imagem válida");
+                               
+        //                        bytes = ms.ToArray();
+
+        //                        var imagePath = Path.Combine("C:\\Users\\cacag\\OneDrive\\Área de Trabalho\\Camila\\1. PUC\\6 Semestre\\TI - VI\\PillCat\\PillCat\\PillCat.Models", "Images", "LOGO.png");
+        //                        System.IO.File.WriteAllBytes(imagePath, bytes);                               
+
+        //                        var getImageTextResult = await _pillsFacade.GetImageTextFromLocalFileUrl("http://localhost:57406/images/LOGO.png");
+
+        //                        return Ok(getImageTextResult);
+        //                    }
+        //                    else
+        //                    {
+        //                        return BadRequest("A imagem não está em um formato suportado.");
+        //                    }
+        //                }
+        //            }
+        //            else
+        //            {
+        //                return BadRequest("O arquivo de imagem está vazio.");
+        //            }
+        //        }
+        //        else
+        //        {
+        //            return BadRequest("Nenhum arquivo de imagem fornecido na solicitação.");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest($"Erro ao receber ou processar a imagem: {ex.Message}");
+        //    }
+        //}
+
+        /// <summary>
         /// Extracts image text using OCR API from the file image given
         /// </summary>       
         /// <returns> The text contained in the image and response status info </returns>  
@@ -144,9 +205,10 @@ namespace PillCat.Controllers
         [HttpPost("imageTextFromFile")]
         public async Task<IActionResult> GetImageTextFromFile()
         {
+            byte[] bytes;
+
             try
             {
-                // Verifique se o conteúdo da solicitação é um arquivo de imagem válido
                 if (Request.HasFormContentType && Request.Form.Files.Count > 0)
                 {
                     var file = Request.Form.Files[0];
@@ -156,28 +218,16 @@ namespace PillCat.Controllers
                         {
                             await file.CopyToAsync(ms);
 
-                            // Detecta o tipo de mídia da imagem usando a biblioteca MagicNumber
                             var mimeType = MimeTypes.GetMimeType(Path.GetExtension(file.FileName));
 
                             if (mimeType == "image/jpeg" || mimeType == "image/png")
                             {
                                 Console.WriteLine("Imagem válida");
 
-                                var content = new MultipartFormDataContent();
+                                bytes = ms.ToArray();
 
-                                // Crie um StreamContent com o conteúdo do arquivo
-                                var streamContent = new StreamContent(ms);
-
-                                streamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
-                                {
-                                    Name = "file",
-                                    FileName = file.FileName,
-                                };
-
-                                // Adicione o StreamContent ao MultipartFormDataContent
-                                content.Add(streamContent);
-
-                                var getImageTextResult = await _pillsFacade.GetImageTextFromFile(mimeType, content);
+                                string base64 = Convert.ToBase64String(bytes);
+                                var getImageTextResult = await _pillsFacade.GetImageTextFromFile(mimeType, $"data:image/png;base64,{base64}");                          
 
                                 return Ok(getImageTextResult);
                             }

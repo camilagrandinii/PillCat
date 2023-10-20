@@ -1,6 +1,8 @@
 ﻿using PillCat.Models.Responses;
 using PillCat.Services.Clients;
 using PillCat.Services.Interfaces;
+using System.Net.Http;
+using System.Net.Mime;
 
 namespace PillCat.Services
 {
@@ -21,9 +23,24 @@ namespace PillCat.Services
             return await _ocrClient.GetImageTextFromUrl("K81989641788957", url);
         }
 
-        public async Task<OcrTextResponse> GetImageTextFromFile(string mimeType, MultipartFormDataContent fileContent)
-        {           
-            return await _ocrClient.GetImageTextFromFile("K81989641788957", fileContent);
+        public async Task<OcrTextResponse> GetImageTextFromFile(string mimeType, string fileContent)
+        {            
+            var content = new MultipartFormDataContent
+            {
+                { new StringContent(fileContent), "base64Image" }
+            };
+
+            return await _ocrClient.GetImageTextFromFile("K81989641788957", content);
+        }
+
+        public async Task<OcrTextResponse> GetImageTextFromLocalFileUrl(string url)
+        {
+            var content = new MultipartFormDataContent
+            {
+                { new StringContent(url), "url" }
+            };
+
+            return await _ocrClient.GetImageTextFromLocalFileUrl("K81989641788957", content);
         }
 
         public async Task<dynamic> GetInformationFromPill(string name)

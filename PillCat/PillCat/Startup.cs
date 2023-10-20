@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using PillCat.Constants;
 using PillCat.Facades.Extensions;
 using PillCat.Middleware;
@@ -72,7 +73,12 @@ namespace PillCat
                    endpoints.MapControllers();
                });
 
-            app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+             {
+                 FileProvider = new PhysicalFileProvider(
+                 Path.Combine(Directory.GetCurrentDirectory(), "C:\\Users\\cacag\\OneDrive\\Área de Trabalho\\Camila\\1. PUC\\6 Semestre\\TI - VI\\PillCat\\PillCat\\PillCat.Models\\Images\\")),
+                 RequestPath = "/images"
+             });
         }
     }
 }

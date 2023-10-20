@@ -18,9 +18,14 @@ namespace PillCat.Facades
             return await _pillsService.GetImageTextFromUrl(url);
         }
 
-        public async Task<OcrTextResponse> GetImageTextFromFile(string mimeType, MultipartFormDataContent fileContent)
+        public async Task<OcrTextResponse> GetImageTextFromFile(string mimeType, string fileContent)
         {
             return await _pillsService.GetImageTextFromFile(mimeType, fileContent);
+        }
+
+        public async Task<OcrTextResponse> GetImageTextFromLocalFileUrl(string url)
+        {
+            return await _pillsService.GetImageTextFromLocalFileUrl(url);
         }
 
         public async Task<dynamic> GetInformationFromPill(string name)
