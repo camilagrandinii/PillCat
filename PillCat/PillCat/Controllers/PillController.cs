@@ -146,7 +146,7 @@ namespace PillCat.Controllers
         {
             try
             {
-                // Verifique se o conteúdo da solicitação é um arquivo de imagem válido
+                // Verifique se o conteï¿½do da solicitaï¿½ï¿½o ï¿½ um arquivo de imagem vï¿½lido
                 if (Request.HasFormContentType && Request.Form.Files.Count > 0)
                 {
                     var file = Request.Form.Files[0];
@@ -156,16 +156,16 @@ namespace PillCat.Controllers
                         {
                             await file.CopyToAsync(ms);
 
-                            // Detecta o tipo de mídia da imagem usando a biblioteca MagicNumber
+                            // Detecta o tipo de mï¿½dia da imagem usando a biblioteca MagicNumber
                             var mimeType = MimeTypes.GetMimeType(Path.GetExtension(file.FileName));
 
                             if (mimeType == "image/jpeg" || mimeType == "image/png")
                             {
-                                Console.WriteLine("Imagem válida");
+                                Console.WriteLine("Imagem vï¿½lida");
 
                                 var content = new MultipartFormDataContent();
 
-                                // Crie um StreamContent com o conteúdo do arquivo
+                                // Crie um StreamContent com o conteï¿½do do arquivo
                                 var streamContent = new StreamContent(ms);
 
                                 streamContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
@@ -183,18 +183,18 @@ namespace PillCat.Controllers
                             }
                             else
                             {
-                                return BadRequest("A imagem não está em um formato suportado.");
+                                return BadRequest("A imagem nï¿½o estï¿½ em um formato suportado.");
                             }
                         }
                     }
                     else
                     {
-                        return BadRequest("O arquivo de imagem está vazio.");
+                        return BadRequest("O arquivo de imagem estï¿½ vazio.");
                     }
                 }
                 else
                 {
-                    return BadRequest("Nenhum arquivo de imagem fornecido na solicitação.");
+                    return BadRequest("Nenhum arquivo de imagem fornecido na solicitaï¿½ï¿½o.");
                 }
             }
             catch (Exception ex)

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
 
 namespace PillCat.Services.Clients
 {
@@ -16,9 +16,7 @@ namespace PillCat.Services.Clients
                 if (response.IsSuccessStatusCode)
                 {
                     string responseBody = await response.Content.ReadAsStringAsync();
-                    dynamic jsonResponse = JsonConvert.DeserializeObject(responseBody);
-
-                    return jsonResponse;
+                    return responseBody;
                 }
                 else
                 {
@@ -29,12 +27,17 @@ namespace PillCat.Services.Clients
             }
         }
 
-        public async Task<dynamic> GetLeaflet(dynamic medInfo)
+        public async Task<dynamic> GetLeaflet(dynamic stringMedInfo)
         {
-            if (medInfo != null && medInfo.content != null && medInfo.content.Count > 0 && medInfo.content[0] != null && medInfo.content[0].idBulaProfissionalProtegido != null)
+            JsonDocument medInfo = JsonDocument.Parse(stringMedInfo);
+            if (medInfo != null)
             {
                 // Retrieve the value
-                string idBulaProfissionalProtegido = medInfo.content[0].idBulaProfissionalProtegido;
+                    JsonElement idBulaProfissionalProtegidoValue = medInfo.RootElement
+                    .GetProperty("content")[0] // Assuming there's at least one element in the "content" array
+                    .GetProperty("idBulaProfissionalProtegido");
+
+                    string idBulaProfissionalProtegido = idBulaProfissionalProtegidoValue.GetString();
 
                 using (HttpClient client = new HttpClient())
                 {
@@ -45,12 +48,15 @@ namespace PillCat.Services.Clients
 
                     if (response.IsSuccessStatusCode)
                     {
-                        string responseBody = await response.Content.ReadAsStringAsync();
-                        dynamic jsonResponse = JsonConvert.DeserializeObject(responseBody);
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    JsonDocument jsonDocument = JsonDocument.Parse(responseBody);
 
-                        if (jsonResponse != null)
-                        {                            
-                            return jsonResponse;
+                        if (jsonDocument != null)
+                        {                        
+                            JsonElement pdfElement = jsonDocument.RootElement.GetProperty("pdf");
+                            var url = pdfElement.GetString();
+                            return url;
+
                         }
                         else
                         {

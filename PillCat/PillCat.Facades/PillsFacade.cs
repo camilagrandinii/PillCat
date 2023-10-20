@@ -31,8 +31,8 @@ namespace PillCat.Facades
         public async Task<dynamic> GetLeafletFromPill(string name)
         {
             var informationFromPillResult = await _pillsService.GetInformationFromPill(name);
-
-            return await _pillsService.GetLeaflet(informationFromPillResult);
+            var url = await _pillsService.GetLeaflet(informationFromPillResult);
+            return url;
         }
     }
 }
