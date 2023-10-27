@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
+using PillCat.Models.DbContexts;
 
 namespace PillCat.Controllers
 {
@@ -29,7 +30,41 @@ namespace PillCat.Controllers
             {
                 return NotFound();
             }
+
             return await _context.Pills.ToListAsync();
+        }
+
+        /// <summary>
+        /// Gets a specific pill's leaflet that can be opened online
+        /// </summary>
+        /// <param name="name"> Name of the pill registered </param>
+        /// <returns> The leaflet of the pill that matches the name </returns>
+        [HttpGet("specific-leaflet")]
+        public async Task<ActionResult<string>> GetPillLeafLet(string name)
+        {
+            if (_context.Pills == null)
+            {
+                return NotFound();
+            }
+
+            var pills = await _context.Pills.ToListAsync();
+            Pill pill = null;
+
+            Parallel.ForEach(pills, (u, state) =>
+            {
+                if (u.Name == name)
+                {
+                    pill = u;
+                    state.Break();
+                }
+            });
+
+            if (pill == null)
+            {
+                return NotFound();
+            }
+
+            return pill.Leaflet;
         }
 
         /// <summary>
@@ -111,6 +146,12 @@ namespace PillCat.Controllers
             {
                 return Problem("Entity set 'PillContext.Pills'  is null.");
             }
+
+            pill.setPillId();
+
+            var leafletInfo = await _pillsFacade.GetLeafletFromPill(pill.Name);
+
+            pill.Leaflet = leafletInfo;
 
             _context.Pills.Add(pill);
 

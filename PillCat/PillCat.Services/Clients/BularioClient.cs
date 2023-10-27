@@ -55,7 +55,7 @@ namespace PillCat.Services.Clients
                         {                        
                             JsonElement pdfElement = jsonDocument.RootElement.GetProperty("pdf");
                             var url = pdfElement.GetString();
-                            return url;
+                            return $"{url}{idBulaProfissionalProtegido}";
 
                         }
                         else

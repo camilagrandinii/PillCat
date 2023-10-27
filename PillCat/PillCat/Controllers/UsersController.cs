@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PillCat.Models;
+using PillCat.Models.DbContexts;
 
 namespace PillCat.Controllers
 {
@@ -35,7 +36,9 @@ namespace PillCat.Controllers
                 return NotFound();
             }
             var users = await _context.User.ToListAsync();
+            
             User user = null;
+
             foreach (User u in users)
             {
                 if (u.Email == email)

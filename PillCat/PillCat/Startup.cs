@@ -3,7 +3,7 @@ using Microsoft.Extensions.FileProviders;
 using PillCat.Constants;
 using PillCat.Facades.Extensions;
 using PillCat.Middleware;
-using PillCat.Models;
+using PillCat.Models.DbContexts;
 
 namespace PillCat
 {

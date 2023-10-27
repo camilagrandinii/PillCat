@@ -3,6 +3,6 @@
     public class ProjectConstants
     {
         public const string PROJECT_NAME = "PillCat";
-        public const string API_VERSION = "v1";
+        public const string API_VERSION = "_v1";
     }
 }
