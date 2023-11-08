@@ -146,6 +146,38 @@ namespace PillCat.Controllers
         }
 
         /// <summary>
+        /// Updates the usage record of a specific pill
+        /// </summary>
+        /// <param name="name"> Name of the registered pill </param>
+        /// <param name="usageState"> State to be set in the usage record of the pill </param>
+        /// <returns> The updated specific usage record of the pill </returns>
+        [HttpPut("pill-usage-record")]
+        public async Task<IActionResult> PutUsageRecordOfPill([FromBody] string name, bool usageState)
+        {
+
+            Pill pill = await GetPillAux(name);
+
+            var currentDate = DateTime.Today;
+
+            var putUsageRecordOfPillResult = await _context.Pills
+                .Include(p => p.UsageRecord)
+                .Select(p => new
+                {
+                    Pills = p,
+                    UsageRecords = p.UsageRecord.Where(ur => ur.DateTime.Date == currentDate)
+                })
+                .Where(p => p.Pills.Name.Equals(name))
+                .Select(p => PutUsageRecord(p.UsageRecords, usageState))
+                .ToListAsync();
+
+            _context.Entry(pill).State = EntityState.Modified;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(putUsageRecordOfPillResult);
+        }
+
+        /// <summary>
         /// Posts a pill
         /// </summary>
         /// <param name="pill"> The necessary data to create a pill </param>
@@ -274,6 +306,19 @@ namespace PillCat.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        private UsageRecord PutUsageRecord(IEnumerable<UsageRecord> usageRecord, bool usageState)
+        {
+            var currentDate = DateTime.Today;
+
+            UsageRecord updatedUsageRecord = 
+                usageRecord.FirstOrDefault(u => u.PillUsed == false);
+
+            updatedUsageRecord.PillUsed = usageState;
+            updatedUsageRecord.DateTime = DateTime.Now;
+
+            return updatedUsageRecord;
         }
 
         private bool PillExists(int id)
