@@ -1,9 +1,17 @@
-﻿using PillCat.Models.Responses;
+﻿using PillCat.Models;
+using PillCat.Models.Responses;
 
 namespace PillCat.Facades.Interfaces
 {
     public interface IPillsFacade
     {
+        /// <summary>
+        /// Enriches the content of the pill given by the user
+        /// </summary>
+        /// <param name="pillRequest"> The information filled on the pill formulary </param>
+        /// <returns> The enriched pill </returns>  
+        public Task<Pill> EnrichPill(PostPillRequest pillRequest);
+
         /// <summary>
         /// Extracts image text using OCR API from the url image given
         /// </summary>

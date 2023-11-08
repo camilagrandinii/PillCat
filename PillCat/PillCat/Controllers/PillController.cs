@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
 using PillCat.Models.DbContexts;
-using System.Xml.Linq;
 
 namespace PillCat.Controllers
 {
@@ -25,7 +24,7 @@ namespace PillCat.Controllers
         /// </summary>
         /// <returns> The list of all registered pills. </returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Pills>>> GetPills()
+        public async Task<ActionResult<IEnumerable<Pill>>> GetPills()
         {
             if (_context.Pills == null)
             {
@@ -74,7 +73,7 @@ namespace PillCat.Controllers
                 return NotFound();
             }
 
-            Pills pill = await GetPillAux(name);
+            Pill pill = await GetPillAux(name);
 
             return pill.Leaflet;
         }
@@ -85,7 +84,7 @@ namespace PillCat.Controllers
         /// <param name="name"> Name of the pill registered </param>
         /// <returns> The specific requested pill that matches the name </returns>
         [HttpGet("specific")]
-        public async Task<ActionResult<Pills>> GetPill(string name)
+        public async Task<ActionResult<Pill>> GetPill(string name)
         {
             if (_context.Pills == null)
             {
@@ -93,7 +92,7 @@ namespace PillCat.Controllers
             }
 
             var pills = await _context.Pills.ToListAsync();
-            Pills pill = null;
+            Pill pill = null;
 
             Parallel.ForEach(pills, (u, state) =>
             {
@@ -118,7 +117,7 @@ namespace PillCat.Controllers
         /// <param name="id"> Id of the registered pill </param>
         /// <returns> The updated specific pill data </returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPill(int id, Pills pill)
+        public async Task<IActionResult> PutPill(int id, Pill pill)
         {
             if (id != pill.Id)
             {
@@ -152,14 +151,14 @@ namespace PillCat.Controllers
         /// <param name="pill"> The necessary data to create a pill </param>
         /// <returns> The created pill data </returns>
         [HttpPost]
-        public async Task<ActionResult<Pills>> PostPill([FromBody] PostPillRequest pill)
+        public async Task<ActionResult<Pill>> PostPill([FromBody] PostPillRequest pill)
         {
             if (_context.Pills == null)
             {
                 return Problem("Entity set 'PillContext.Pills'  is null.");
             }
 
-            Pills enrichedPill = await _pillsFacade.EnrichPill(pill);
+            Pill enrichedPill = await _pillsFacade.EnrichPill(pill);
 
             _context.Pills.Add(enrichedPill);
 
@@ -223,7 +222,7 @@ namespace PillCat.Controllers
                                     return NotFound();
                                 }
 
-                                Pills pill = await GetPillAux("rivotril");
+                                Pill pill = await GetPillAux("rivotril");
 
                                 pill.QuantityInBox = 3;
 
@@ -282,7 +281,7 @@ namespace PillCat.Controllers
             return (_context.Pills?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
-        private async Task<Pills> GetPillAux(string name)
+        private async Task<Pill> GetPillAux(string name)
         {
             if (_context.Pills == null)
             {
@@ -290,7 +289,7 @@ namespace PillCat.Controllers
             }
 
             var pills = await _context.Pills.ToListAsync();
-            Pills pill = null;
+            Pill pill = null;
 
             Parallel.ForEach(pills, (u, state) =>
             {
@@ -309,7 +308,7 @@ namespace PillCat.Controllers
             return pill;
         }
 
-        private async Task<Pills> PutPillAux(int id, Pills pill)
+        private async Task<Pill> PutPillAux(int id, Pill pill)
         {
             if (id != pill.Id)
             {
@@ -326,7 +325,7 @@ namespace PillCat.Controllers
             {
                 if (!PillExists(id))
                 {
-                    return new Pills();
+                    return new Pill();
                 }
                 else
                 {

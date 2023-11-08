@@ -1,4 +1,6 @@
-﻿using PillCat.Facades.Interfaces;
+﻿using AutoMapper;
+using PillCat.Facades.Interfaces;
+using PillCat.Models;
 using PillCat.Models.Responses;
 using PillCat.Services.Interfaces;
 
@@ -12,7 +14,34 @@ namespace PillCat.Facades
         {
             _pillsService = pillsService;
         }
-            
+
+        public async Task<Pill> EnrichPill(PostPillRequest pill)
+        {
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<PostPillRequest, Pill>();
+            });
+
+            var mapper = configuration.CreateMapper();
+
+            Pill enrichedPill = mapper.Map<Pill>(pill);
+
+            enrichedPill.setPillId();
+
+            var leafletInfo = await GetLeafletFromPill(enrichedPill.Name);
+
+            enrichedPill.Leaflet = leafletInfo;
+
+            enrichedPill.UsageRecord = new List<UsageRecord>();
+
+            for (int i = 0; i < pill.PeriodOfTreatment.Amount; i += enrichedPill.FrequencyOfPill.IntervalPeriod)
+            {
+                enrichedPill.UsageRecord.Add(new UsageRecord { DateTime = DateTime.Today.AddDays(i), Pill = enrichedPill, PillUsed = false, UsageRecordId = Guid.NewGuid().GetHashCode() });
+            }
+
+            return enrichedPill;
+        }
+
         public async Task<OcrTextResponse> GetImageTextFromUrl(string url)
         {
             return await _pillsService.GetImageTextFromUrl(url);

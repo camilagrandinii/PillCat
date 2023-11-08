@@ -9,7 +9,7 @@ public class PillContext : DbContext
     {
     }
 
-    public DbSet<Pills> Pills => Set<Pills>();
+    public DbSet<Pill> Pills => Set<Pill>();
 
     public DbSet<UsageRecord> UsageRecords => Set<UsageRecord>();
 
@@ -17,7 +17,7 @@ public class PillContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Pills>(entity =>
+        modelBuilder.Entity<Pill>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd().IsRequired();

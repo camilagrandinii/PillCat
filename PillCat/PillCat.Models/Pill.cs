@@ -11,16 +11,13 @@ public class Pill
     public string? TimeToIngest { get; set; }
     public MealPeriod Meal { get; set; }
 
-    [JsonIgnore]
     public int Id { get; set; }
 
-    [JsonIgnore]
     public int QuantityInBox { get; set; }
 
-    //[JsonIgnore]
-    //public List<UsageRecord>? UsageRecord { get; set; }
-
     [JsonIgnore]
+    public List<UsageRecord>? UsageRecord { get; set; }
+
     public string? Leaflet { get; set; }
 
     public void setPillId()
