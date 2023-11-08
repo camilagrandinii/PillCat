@@ -9,13 +9,15 @@ public class PillContext : DbContext
     {
     }
 
-    public DbSet<Pill> Pills { get; set; }
+    public DbSet<Pills> Pills => Set<Pills>();
+
+    public DbSet<UsageRecord> UsageRecords => Set<UsageRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Pill>(entity =>
+        modelBuilder.Entity<Pills>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd().IsRequired();
@@ -42,6 +44,8 @@ public class PillContext : DbContext
                 amountPerUse.Property(f => f.PillType);
             });
         });
+
+        modelBuilder.Entity<UsageRecord>();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

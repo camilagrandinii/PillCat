@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
 using PillCat.Models.DbContexts;
+using System.Xml.Linq;
 
 namespace PillCat.Controllers
 {
@@ -24,7 +25,7 @@ namespace PillCat.Controllers
         /// </summary>
         /// <returns> The list of all registered pills. </returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Pill>>> GetPills()
+        public async Task<ActionResult<IEnumerable<Pills>>> GetPills()
         {
             if (_context.Pills == null)
             {
@@ -32,6 +33,32 @@ namespace PillCat.Controllers
             }
 
             return await _context.Pills.ToListAsync();
+        }
+
+        /// <summary>
+        /// Gets list of all pills that should be taken in the current day
+        /// </summary>
+        /// <returns> The list of all pills for the day. </returns>
+        [HttpGet("today-pills")]
+        public async Task<ActionResult<IEnumerable<TodayPillsResponse>>> GetTodayPills()
+        {
+            if (_context.Pills == null)
+            {
+                return NotFound();
+            }
+
+            var currentDate = DateTime.Today;
+
+            var pillsListResult = await _context.Pills
+                .Include(p => p.UsageRecord)
+                .Select(p => new
+                {
+                    Pills = p,
+                    UsageRecords = p.UsageRecord.Where(ur => ur.DateTime.Date == currentDate)
+                })
+                .ToListAsync();         
+
+            return Ok(pillsListResult);
         }
 
         /// <summary>
@@ -47,22 +74,7 @@ namespace PillCat.Controllers
                 return NotFound();
             }
 
-            var pills = await _context.Pills.ToListAsync();
-            Pill pill = null;
-
-            Parallel.ForEach(pills, (u, state) =>
-            {
-                if (u.Name == name)
-                {
-                    pill = u;
-                    state.Break();
-                }
-            });
-
-            if (pill == null)
-            {
-                return NotFound();
-            }
+            Pills pill = await GetPillAux(name);
 
             return pill.Leaflet;
         }
@@ -73,7 +85,7 @@ namespace PillCat.Controllers
         /// <param name="name"> Name of the pill registered </param>
         /// <returns> The specific requested pill that matches the name </returns>
         [HttpGet("specific")]
-        public async Task<ActionResult<Pill>> GetPill(string name)
+        public async Task<ActionResult<Pills>> GetPill(string name)
         {
             if (_context.Pills == null)
             {
@@ -81,7 +93,7 @@ namespace PillCat.Controllers
             }
 
             var pills = await _context.Pills.ToListAsync();
-            Pill pill = null;
+            Pills pill = null;
 
             Parallel.ForEach(pills, (u, state) =>
             {
@@ -106,7 +118,7 @@ namespace PillCat.Controllers
         /// <param name="id"> Id of the registered pill </param>
         /// <returns> The updated specific pill data </returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPill(int id, Pill pill)
+        public async Task<IActionResult> PutPill(int id, Pills pill)
         {
             if (id != pill.Id)
             {
@@ -140,24 +152,20 @@ namespace PillCat.Controllers
         /// <param name="pill"> The necessary data to create a pill </param>
         /// <returns> The created pill data </returns>
         [HttpPost]
-        public async Task<ActionResult<Pill>> PostPill(Pill pill)
+        public async Task<ActionResult<Pills>> PostPill([FromBody] PostPillRequest pill)
         {
             if (_context.Pills == null)
             {
                 return Problem("Entity set 'PillContext.Pills'  is null.");
             }
 
-            pill.setPillId();
+            Pills enrichedPill = await _pillsFacade.EnrichPill(pill);
 
-            var leafletInfo = await _pillsFacade.GetLeafletFromPill(pill.Name);
-
-            pill.Leaflet = leafletInfo;
-
-            _context.Pills.Add(pill);
+            _context.Pills.Add(enrichedPill);
 
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("PostPill", new { id = pill.Id }, pill);
+            return CreatedAtAction("PostPill", new { id = enrichedPill.Id }, enrichedPill);
         }
 
         /// <summary>
@@ -177,66 +185,6 @@ namespace PillCat.Controllers
 
             return Ok(x);
         }
-
-        /// <summary>
-        /// Extracts image text using OCR API from the url of a local file image given
-        /// </summary>       
-        /// <returns> The text contained in the image and response status info </returns>  
-
-        //[HttpPost("imageTextFromLocalFileUrl")]
-        //public async Task<IActionResult> GetImageTextFromLocalFileUrl()
-        //{
-        //    byte[] bytes;
-
-        //    try
-        //    {
-        //        // Verifique se o conteúdo da solicitação é um arquivo de imagem válido
-        //        if (Request.HasFormContentType && Request.Form.Files.Count > 0)
-        //        {
-        //            var file = Request.Form.Files[0];
-        //            if (file.Length > 0)
-        //            {
-        //                using (var ms = new MemoryStream())
-        //                {
-        //                    await file.CopyToAsync(ms);
-
-        //                    // Detecta o tipo de mídia da imagem usando a biblioteca MagicNumber
-        //                    var mimeType = MimeTypes.GetMimeType(Path.GetExtension(file.FileName));
-
-        //                    if (mimeType == "image/jpeg" || mimeType == "image/png")
-        //                    {
-        //                        Console.WriteLine("Imagem válida");
-                               
-        //                        bytes = ms.ToArray();
-
-        //                        var imagePath = Path.Combine("C:\\Users\\cacag\\OneDrive\\Área de Trabalho\\Camila\\1. PUC\\6 Semestre\\TI - VI\\PillCat\\PillCat\\PillCat.Models", "Images", "LOGO.png");
-        //                        System.IO.File.WriteAllBytes(imagePath, bytes);                               
-
-        //                        var getImageTextResult = await _pillsFacade.GetImageTextFromLocalFileUrl("http://localhost:57406/images/LOGO.png");
-
-        //                        return Ok(getImageTextResult);
-        //                    }
-        //                    else
-        //                    {
-        //                        return BadRequest("A imagem não está em um formato suportado.");
-        //                    }
-        //                }
-        //            }
-        //            else
-        //            {
-        //                return BadRequest("O arquivo de imagem está vazio.");
-        //            }
-        //        }
-        //        else
-        //        {
-        //            return BadRequest("Nenhum arquivo de imagem fornecido na solicitação.");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest($"Erro ao receber ou processar a imagem: {ex.Message}");
-        //    }
-        //}
 
         /// <summary>
         /// Extracts image text using OCR API from the file image given
@@ -268,7 +216,18 @@ namespace PillCat.Controllers
                                 bytes = ms.ToArray();
 
                                 string base64 = Convert.ToBase64String(bytes);
-                                var getImageTextResult = await _pillsFacade.GetImageTextFromFile(mimeType, $"data:image/png;base64,{base64}");                          
+                                var getImageTextResult = await _pillsFacade.GetImageTextFromFile(mimeType, $"data:image/png;base64,{base64}");
+
+                                if (_context.Pills == null)
+                                {
+                                    return NotFound();
+                                }
+
+                                Pills pill = await GetPillAux("rivotril");
+
+                                pill.QuantityInBox = 3;
+
+                                await PutPillAux(pill.Id, pill);                          
 
                                 return Ok(getImageTextResult);
                             }
@@ -322,5 +281,61 @@ namespace PillCat.Controllers
         {
             return (_context.Pills?.Any(e => e.Id == id)).GetValueOrDefault();
         }
+
+        private async Task<Pills> GetPillAux(string name)
+        {
+            if (_context.Pills == null)
+            {
+                return null;
+            }
+
+            var pills = await _context.Pills.ToListAsync();
+            Pills pill = null;
+
+            Parallel.ForEach(pills, (u, state) =>
+            {
+                if (u.Name == name)
+                {
+                    pill = u;
+                    state.Break();
+                }
+            });
+
+            if (pill == null)
+            {
+                return null;
+            }
+
+            return pill;
+        }
+
+        private async Task<Pills> PutPillAux(int id, Pills pill)
+        {
+            if (id != pill.Id)
+            {
+                return null;
+            }
+
+            _context.Entry(pill).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!PillExists(id))
+                {
+                    return new Pills();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return pill;
+        }
+
     }
 }
