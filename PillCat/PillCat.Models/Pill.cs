@@ -20,6 +20,30 @@ public class Pill
 
     public string? Leaflet { get; set; }
 
+    public Pill()
+    {
+        Name = "";
+        PeriodOfTreatment = null;
+        FrequencyOfPill = null;
+        AmountPerUse = null;
+        TimeToIngest = "";
+        Meal = 0;
+        QuantityInBox = -1;
+        Leaflet = "";
+    }
+
+    public Pill(Pill pill)
+    {
+        Name = pill.Name;
+        PeriodOfTreatment = pill.PeriodOfTreatment;
+        FrequencyOfPill = pill.FrequencyOfPill;
+        AmountPerUse = pill.AmountPerUse;
+        TimeToIngest = pill.TimeToIngest;
+        Meal = pill.Meal;
+        QuantityInBox = pill.QuantityInBox;
+        Leaflet = pill.Leaflet;    
+    }
+
     public void setPillId()
     {        
         Id = GenerateUniqueId();
