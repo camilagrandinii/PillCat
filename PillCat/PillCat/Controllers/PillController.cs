@@ -146,14 +146,14 @@ namespace PillCat.Controllers
                     else
                     {
                         finalInfo.Error = true;
-                        finalInfo.Message = "O arquivo de imagem est· vazio.";
+                        finalInfo.Message = "O arquivo de imagem est√° vazio.";
                         return finalInfo;
                     }
                 }
                 else
                 {
                     finalInfo.Error = true;
-                    finalInfo.Message = "Nenhum arquivo de imagem fornecido na solicitaÁ„o.";
+                    finalInfo.Message = "Nenhum arquivo de imagem fornecido na solicita√ß√£o.";
                     return finalInfo;
                 }
             }
