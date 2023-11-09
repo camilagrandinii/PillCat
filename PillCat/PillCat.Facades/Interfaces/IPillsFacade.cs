@@ -1,9 +1,19 @@
-﻿using PillCat.Models.Responses;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using PillCat.Models;
+using PillCat.Models.Responses;
 
 namespace PillCat.Facades.Interfaces
 {
     public interface IPillsFacade
     {
+        /// <summary>
+        /// Enriches the content of the pill given by the user
+        /// </summary>
+        /// <param name="pillRequest"> The information filled on the pill formulary </param>
+        /// <returns> The enriched pill </returns>  
+        public Task<Pill> EnrichPill(PostPillRequest pillRequest);
+
         /// <summary>
         /// Extracts image text using OCR API from the url image given
         /// </summary>
@@ -14,10 +24,9 @@ namespace PillCat.Facades.Interfaces
         /// <summary>
         /// Extracts image text using OCR API from the file image given
         /// </summary>
-        /// <param name="mimeType"> The mime type of the image uploaded </param>
-        /// <param name="fileContent"> The image represented as a multipart content </param>
+        /// <param name="file"> file </param>     
         /// <returns> The text contained in the image and response status info </returns>  
-        Task<OcrTextResponse> GetImageTextFromFile(string mimeType, string fileContent);
+        Task<OcrInfo> GetImageTextFromFile(IFormFile file);
 
         /// <summary>
         /// Extracts image text using OCR API from the local file url image given
@@ -39,5 +48,63 @@ namespace PillCat.Facades.Interfaces
         /// <param name="name"> Name of the pill to extract leaflet </param>
         /// <returns> PDF link to pill leaflet </returns>  
         Task<dynamic> GetLeafletFromPill(string name);
+
+        /// <summary>
+        /// Posts a pill
+        /// </summary>
+        /// <param name="pill"> The necessary data to create a pill </param>
+        /// <returns> The created pill data </returns>
+        Task<Pill> PostPill(PostPillRequest pill);
+
+        /// <summary>
+        /// Gets list of all pills registered in our app
+        /// </summary>
+        /// <returns> The list of all registered pills. </returns>
+        Task<IEnumerable<Pill>> GetPills();
+
+        /// <summary>
+        /// Gets list of all pills that should be taken in the current day
+        /// </summary>
+        /// <returns> The list of all pills for the day. </returns>
+        Task<IEnumerable<TodayPillsResponse>> GetTodayPills();
+
+        /// <summary>
+        /// Gets a specific pill's leaflet that can be opened online
+        /// </summary>
+        /// <param name="name"> Name of the pill registered </param>
+        /// <returns> The leaflet of the pill that matches the name </returns>
+
+        Task<string> GetPillLeafLet(string name);
+
+        /// <summary>
+        /// Gets a specific pill
+        /// </summary>
+        /// <param name="name"> Name of the pill registered </param>
+        /// <returns> The specific requested pill that matches the name </returns>
+        Task<Pill> GetPill(string name);
+
+        /// <summary>
+        /// Updated a specific pill
+        /// </summary>
+        /// <param name="id"> ID of the Pill to be updated </param>
+        /// <param name="pill"> Pill to be updated </param>
+        /// <returns> The updated specific pill data </returns>
+        Task<Pill> PutPill(PostPillRequest pill);
+
+        /// <summary>
+        /// Delete specific pill
+        /// </summary>
+        /// <param name="id"> Id of the registered pill </param>
+        /// <returns> The result of the action </returns>
+        Task<bool> DeletePill(int id);
+
+        /// <summary>
+        /// Updates the usage record of a specific pill
+        /// </summary>
+        /// <param name="name"> Name of the registered pill </param>
+        /// <param name="usageState"> State to be set in the usage record of the pill </param>
+        /// <returns> The updated specific usage record of the pill </returns>
+
+        Task<List<UsageRecord>> PutUsageRecordOfPill(string name, bool usageState);
     }
 }

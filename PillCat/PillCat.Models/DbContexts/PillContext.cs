@@ -9,7 +9,9 @@ public class PillContext : DbContext
     {
     }
 
-    public DbSet<Pill> Pills { get; set; }
+    public DbSet<Pill> Pills => Set<Pill>();
+
+    public DbSet<UsageRecord> UsageRecords => Set<UsageRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,6 +44,8 @@ public class PillContext : DbContext
                 amountPerUse.Property(f => f.PillType);
             });
         });
+
+        modelBuilder.Entity<UsageRecord>();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

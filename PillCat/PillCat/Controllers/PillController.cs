@@ -1,10 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.EntityFrameworkCore;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
-using PillCat.Models.DbContexts;
-using System.Text.RegularExpressions;
 
 namespace PillCat.Controllers
 {
@@ -12,61 +8,44 @@ namespace PillCat.Controllers
     [ApiController]
     public class PillController : ControllerBase
     {
-        private readonly PillContext _context;
         private readonly IPillsFacade _pillsFacade;
 
-        public PillController(PillContext context, IPillsFacade pillsFacade)
+        public PillController(IPillsFacade pillsFacade)
         {
-            _context = context;
             _pillsFacade = pillsFacade;
         }
 
         /// <summary>
-        /// Gets list of all pills registered in our app
+        /// Posts a pill
         /// </summary>
-        /// <returns> The list of all registered pills. </returns>
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Pill>>> GetPills()
+        /// <param name="pill"> The necessary data to create a pill </param>
+        /// <returns> The created pill data </returns>
+        [HttpPost]
+        public async Task<ActionResult<Pill>> PostPill([FromBody] PostPillRequest pill)
         {
-            if (_context.Pills == null)
-            {
-                return NotFound();
-            }
-
-            return await _context.Pills.ToListAsync();
+            return Ok(await _pillsFacade.PostPill(pill));
         }
 
         /// <summary>
-        /// Gets a specific pill's leaflet that can be opened online
+        /// Updated a specific pill
         /// </summary>
-        /// <param name="name"> Name of the pill registered </param>
-        /// <returns> The leaflet of the pill that matches the name </returns>
-        [HttpGet("specific-leaflet")]
-        public async Task<ActionResult<string>> GetPillLeafLet(string name)
+        /// <param name="pill"> Content of the updated pill </param>
+        /// <returns> The updated specific pill data </returns>
+        [HttpPut()]
+        public async Task<IActionResult> PutPill(PostPillRequest pill)
         {
-            if (_context.Pills == null)
-            {
-                return NotFound();
-            }
+            return Ok(await _pillsFacade.PutPill(pill));
+        }
 
-            var pills = await _context.Pills.ToListAsync();
-            Pill pill = null;
-
-            Parallel.ForEach(pills, (u, state) =>
-            {
-                if (u.Name == name)
-                {
-                    pill = u;
-                    state.Break();
-                }
-            });
-
-            if (pill == null)
-            {
-                return NotFound();
-            }
-
-            return pill.Leaflet;
+        /// <summary>
+        /// Updates the usage record of a specific pill
+        /// </summary>
+        /// <param name="putUsageRecordRequest"> content needed to update the pill's usage record (name and usageState) </param>
+        /// <returns> The updated specific usage record of the pill </returns>
+        [HttpPut("pill-usage-record")]
+        public async Task<IActionResult> PutUsageRecordOfPill([FromBody] PutUsageRecordRequest putUsageRecordRequest)
+        {
+            return Ok(await _pillsFacade.PutUsageRecordOfPill(putUsageRecordRequest.Name, putUsageRecordRequest.UsageState));
         }
 
         /// <summary>
@@ -77,318 +56,38 @@ namespace PillCat.Controllers
         [HttpGet("specific")]
         public async Task<ActionResult<Pill>> GetPill(string name)
         {
-            if (_context.Pills == null)
-            {
-                return NotFound();
-            }
-
-            var pills = await _context.Pills.ToListAsync();
-            Pill pill = null;
-
-            Parallel.ForEach(pills, (u, state) =>
-            {
-                if (u.Name == name)
-                {
-                    pill = u;
-                    state.Break();
-                }
-            });
-
-            if (pill == null)
-            {
-                return NotFound();
-            }
-
-            return pill;
+            return Ok(await _pillsFacade.GetPill(name));
         }
 
         /// <summary>
-        /// Updated a specific pill
+        /// Gets a specific pill's leaflet that can be opened online
         /// </summary>
-        /// <param name="id"> Id of the registered pill </param>
-        /// <returns> The updated specific pill data </returns>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutPill(int id, Pill pill)
+        /// <param name="name"> Name of the pill registered </param>
+        /// <returns> The leaflet of the pill that matches the name </returns>
+        [HttpGet("specific-leaflet")]
+        public async Task<ActionResult<string>> GetPillLeafLet(string name)
         {
-            if (id != pill.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(pill).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PillExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
+            return Ok(await _pillsFacade.GetPillLeafLet(name));
         }
 
         /// <summary>
-        /// Posts a pill
+        /// Gets list of all pills that should be taken in the current day
         /// </summary>
-        /// <param name="pill"> The necessary data to create a pill </param>
-        /// <returns> The created pill data </returns>
-        [HttpPost]
-        public async Task<ActionResult<Pill>> PostPill(Pill pill)
+        /// <returns> The list of all pills for the day. </returns>
+        [HttpGet("today-pills")]
+        public ActionResult<IEnumerable<TodayPillsResponse>> GetTodayPills()
         {
-            if (_context.Pills == null)
-            {
-                return Problem("Entity set 'PillContext.Pills'  is null.");
-            }
-
-            pill.setPillId();
-
-            var leafletInfo = await _pillsFacade.GetLeafletFromPill(pill.Name);
-
-            pill.Leaflet = leafletInfo;
-
-            _context.Pills.Add(pill);
-
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("PostPill", new { id = pill.Id }, pill);
+            return Ok(_pillsFacade.GetTodayPills());
         }
 
         /// <summary>
-        /// Extracts image text using OCR API from the url image given
+        /// Gets list of all pills registered in our app
         /// </summary>
-        /// <param name="url">The url path to the image </param>
-        /// <returns> The text contained in the image and response status info </returns>  
-
-        [HttpPost("imageTextFromUrl")]
-        public async Task<OcrInfo> GetImageTextFromUrl([FromBody] string url)
+        /// <returns> The list of all registered pills. </returns>
+        [HttpGet]
+        public ActionResult<IEnumerable<Pill>> GetPills()
         {
-            string resultPillNotFoundMessage = "{\"content\":[],\"totalElements\":0,\"totalPages\":0,\"last\":true,\"numberOfElements\":0,\"first\":true,\"sort\":null,\"size\":10,\"number\":0}";
-            var responseOCR = await _pillsFacade.GetImageTextFromUrl(url);
-            var leafletInfo = "";
-            var leafletInfoValid = "";
-            var quantComprimidos = "";
-            var pillName = "";
-
-            if (!responseOCR.Error) {
-                string[] textFromImage = (responseOCR.ParsedResults[0].ParsedText).Split(new[] { "\r\n" }, StringSplitOptions.None);
-                
-                foreach(String textPart in textFromImage) {
-                    var resultPill = await _pillsFacade.GetInformationFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
-                    if (!resultPill.Contains("totalElements\":0")) {
-                        leafletInfo = await _pillsFacade.GetLeafletFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
-                        if (leafletInfo.Length > 0) {
-                            leafletInfoValid = leafletInfo;
-                            pillName = Regex.Replace(textPart, "[^a-zA-Z0-9]", "");
-                        }
-                    }
-                    if (Regex.Replace(textPart, "[^a-zA-Z0-9]", "").Contains("comprimidos")) {
-                        quantComprimidos = FiltrarNumeros(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""), @"\d");
-                    }
-                }
-            }
-
-            OcrInfo finalInfo = new OcrInfo();
-            finalInfo.Name = pillName;
-            finalInfo.leafletLink = leafletInfoValid;
-            finalInfo.QuantityInBox = quantComprimidos;
-
-            return finalInfo;
-        }
-
-        static string FiltrarNumeros(string input, string pattern)
-        {
-            Regex regex = new Regex(pattern);
-            MatchCollection matches = regex.Matches(input);
-
-            // Concatenando os caracteres numéricos encontrados em uma string
-            string resultado = "";
-            foreach (Match match in matches)
-            {
-                resultado += match.Value;
-            }
-
-            return resultado;
-        }
-
-        /// <summary>
-        /// Extracts image text using OCR API from the url of a local file image given
-        /// </summary>       
-        /// <returns> The text contained in the image and response status info </returns>  
-
-        //[HttpPost("imageTextFromLocalFileUrl")]
-        //public async Task<IActionResult> GetImageTextFromLocalFileUrl()
-        //{
-        //    byte[] bytes;
-
-        //    try
-        //    {
-        //        // Verifique se o conte�do da solicita��o � um arquivo de imagem v�lido
-        //        if (Request.HasFormContentType && Request.Form.Files.Count > 0)
-        //        {
-        //            var file = Request.Form.Files[0];
-        //            if (file.Length > 0)
-        //            {
-        //                using (var ms = new MemoryStream())
-        //                {
-        //                    await file.CopyToAsync(ms);
-
-        //                    // Detecta o tipo de m�dia da imagem usando a biblioteca MagicNumber
-        //                    var mimeType = MimeTypes.GetMimeType(Path.GetExtension(file.FileName));
-
-        //                    if (mimeType == "image/jpeg" || mimeType == "image/png")
-        //                    {
-        //                        Console.WriteLine("Imagem v�lida");
-                               
-        //                        bytes = ms.ToArray();
-
-        //                        var imagePath = Path.Combine("C:\\Users\\cacag\\OneDrive\\�rea de Trabalho\\Camila\\1. PUC\\6 Semestre\\TI - VI\\PillCat\\PillCat\\PillCat.Models", "Images", "LOGO.png");
-        //                        System.IO.File.WriteAllBytes(imagePath, bytes);                               
-
-        //                        var getImageTextResult = await _pillsFacade.GetImageTextFromLocalFileUrl("http://localhost:57406/images/LOGO.png");
-
-        //                        return Ok(getImageTextResult);
-        //                    }
-        //                    else
-        //                    {
-        //                        return BadRequest("A imagem n�o est� em um formato suportado.");
-        //                    }
-        //                }
-        //            }
-        //            else
-        //            {
-        //                return BadRequest("O arquivo de imagem est� vazio.");
-        //            }
-        //        }
-        //        else
-        //        {
-        //            return BadRequest("Nenhum arquivo de imagem fornecido na solicita��o.");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return BadRequest($"Erro ao receber ou processar a imagem: {ex.Message}");
-        //    }
-        //}
-
-        /// <summary>
-        /// Extracts image text using OCR API from the file image given
-        /// </summary>       
-        /// <returns> The text contained in the image and response status info </returns>  
-
-        [HttpPost("imageTextFromFile")]
-        public async Task<OcrInfo> GetImageTextFromFile()
-        {
-            byte[] bytes;
-
-            OcrInfo finalInfo = new OcrInfo();
-            var leafletInfo = "";
-            var leafletInfoValid = "";
-            var quantComprimidos = "";
-            var pillName = "";
-
-            try
-            {
-                if (Request.HasFormContentType && Request.Form.Files.Count > 0)
-                {
-                    var file = Request.Form.Files[0];
-                    if (file.Length > 0)
-                    {
-                        using (var ms = new MemoryStream())
-                        {
-
-                            await file.CopyToAsync(ms);
-
-                            var mimeType = MimeTypes.GetMimeType(Path.GetExtension(file.FileName));
-
-                            if (mimeType == "image/jpeg" || mimeType == "image/png")
-                            {
-                                Console.WriteLine("Imagem válida");
-
-                                bytes = ms.ToArray();
-
-                                string base64 = Convert.ToBase64String(bytes);
-                                var getImageTextResult = await _pillsFacade.GetImageTextFromFile(mimeType, $"data:image/png;base64,{base64}"); 
-
-                                if (!getImageTextResult.Error) {
-                                    string[] textFromImage = (getImageTextResult.ParsedResults[0].ParsedText).Split(new[] { "\r\n" }, StringSplitOptions.None);
-                                    
-                                    foreach(String textPart in textFromImage) {
-                                        var resultPill = await _pillsFacade.GetInformationFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
-                                        if (!resultPill.Contains("totalElements\":0")) {
-                                            leafletInfo = await _pillsFacade.GetLeafletFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
-                                            if (leafletInfo.Length > 0) {
-                                                leafletInfoValid = leafletInfo;
-                                                pillName = Regex.Replace(textPart, "[^a-zA-Z0-9]", "");
-                                            }
-                                        }
-                                        if (Regex.Replace(textPart, "[^a-zA-Z0-9]", "").Contains("comprimidos")) {
-                                            quantComprimidos = FiltrarNumeros(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""), @"\d");
-                                        }
-                                    }
-                                }
-
-                                if (pillName == "" || leafletInfoValid == "" || quantComprimidos == "") {
-                                    finalInfo.Error = true;
-                                    finalInfo.Message = "Não foi possível identificar o remedio!";
-                                } else {
-                                    finalInfo.Error = false;
-                                    finalInfo.Message = "Remédio encontrado!";
-                                }
-                                finalInfo.Name = pillName;
-                                finalInfo.leafletLink = leafletInfoValid;
-                                finalInfo.QuantityInBox = quantComprimidos;
-
-                                return finalInfo;                        
-                            }
-                            else
-                            {
-                                finalInfo.Error = true;
-                                finalInfo.Message = "A imagem não está em um formato suportado.";
-                                finalInfo.Name = pillName;
-                                finalInfo.leafletLink = leafletInfoValid;
-                                finalInfo.QuantityInBox = quantComprimidos;
-                                return finalInfo;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        finalInfo.Error = true;
-                        finalInfo.Message = "O arquivo de imagem está vazio.";
-                        finalInfo.Name = pillName;
-                        finalInfo.leafletLink = leafletInfoValid;
-                        finalInfo.QuantityInBox = quantComprimidos;
-                        return finalInfo;
-                    }
-                }
-                else
-                {
-                    finalInfo.Error = true;
-                    finalInfo.Message = "Nenhum arquivo de imagem fornecido na solicitação.";
-                    finalInfo.Name = pillName;
-                    finalInfo.leafletLink = leafletInfoValid;
-                    finalInfo.QuantityInBox = quantComprimidos;
-                    return finalInfo;
-                }
-            }
-            catch (Exception ex)
-            {
-                    finalInfo.Error = true;
-                    finalInfo.Message = $"Erro ao receber ou processar a imagem: {ex.Message}";
-                    finalInfo.Name = pillName;
-                    finalInfo.leafletLink = leafletInfoValid;
-                    finalInfo.QuantityInBox = quantComprimidos;
-                    return finalInfo;
-            }
+            return Ok(_pillsFacade.GetPills());
         }
 
         /// <summary>
@@ -399,36 +98,71 @@ namespace PillCat.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePill(int id)
         {
-            if (_context.Pills == null)
-            {
-                return NotFound();
-            }
-            var pill = await _context.Pills.FindAsync(id);
-            if (pill == null)
-            {
-                return NotFound();
-            }
-
-            _context.Pills.Remove(pill);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            return Ok(await _pillsFacade.DeletePill(id));
         }
 
-        private bool PillExists(int id)
+
+        /// <summary>
+        /// Extracts image text using OCR API from the url image given
+        /// </summary>
+        /// <param name="url">The url path to the image </param>
+        /// <returns> The text contained in the image and response status info </returns>  
+
+        [HttpPost("imageTextFromUrl")]
+        public async Task<IActionResult> GetImageTextFromUrl([FromBody] string url)
         {
-            return (_context.Pills?.Any(e => e.Id == id)).GetValueOrDefault();
+            var x = await _pillsFacade.GetImageTextFromUrl(url);
+
+            var pillInfo = await _pillsFacade.GetInformationFromPill("rivotril");
+
+            var leafletInfo = await _pillsFacade.GetLeafletFromPill("rivotril");
+
+            return Ok(x);
+        }
+
+        /// <summary>
+        /// Extracts image text using OCR API from the file image given
+        /// </summary>       
+        /// <returns> The text contained in the image and response status info </returns>  
+
+        [HttpPost("imageTextFromFile")]
+        public async Task<ActionResult<OcrInfo>> GetImageTextFromFile()
+        {
+            OcrInfo finalInfo = new OcrInfo();
+
+            try
+            {
+                if (Request.HasFormContentType && Request.Form.Files.Count > 0)
+                {
+                    var file = Request.Form.Files[0];
+
+                    if (file.Length > 0)
+                    {
+                        finalInfo = await _pillsFacade.GetImageTextFromFile(file);
+
+                        return finalInfo;
+                    }
+
+                    else
+                    {
+                        finalInfo.Error = true;
+                        finalInfo.Message = "O arquivo de imagem está vazio.";
+                        return finalInfo;
+                    }
+                }
+                else
+                {
+                    finalInfo.Error = true;
+                    finalInfo.Message = "Nenhum arquivo de imagem fornecido na solicitação.";
+                    return finalInfo;
+                }
+            }
+            catch (Exception ex)
+            {
+                finalInfo.Error = true;
+                finalInfo.Message = $"Erro ao receber ou processar a imagem: {ex.Message}";
+                return finalInfo;
+            }
         }
     }
-
-
-    public class OcrInfo
-    {
-        public Boolean Error { get; set; }
-        public String Message { get; set; }
-        public String Name { get; set; }
-        public String leafletLink { get; set; }
-        public String QuantityInBox { get; set; }
-    }
-
 }

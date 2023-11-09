@@ -11,17 +11,38 @@ public class Pill
     public string? TimeToIngest { get; set; }
     public MealPeriod Meal { get; set; }
 
-    [JsonIgnore]
     public int Id { get; set; }
 
-    [JsonIgnore]
     public int QuantityInBox { get; set; }
 
-    //[JsonIgnore]
-    //public List<UsageRecord>? UsageRecord { get; set; }
-
     [JsonIgnore]
+    public List<UsageRecord>? UsageRecord { get; set; }
+
     public string? Leaflet { get; set; }
+
+    public Pill()
+    {
+        Name = "";
+        PeriodOfTreatment = null;
+        FrequencyOfPill = null;
+        AmountPerUse = null;
+        TimeToIngest = "";
+        Meal = 0;
+        QuantityInBox = -1;
+        Leaflet = "";
+    }
+
+    public Pill(Pill pill)
+    {
+        Name = pill.Name;
+        PeriodOfTreatment = pill.PeriodOfTreatment;
+        FrequencyOfPill = pill.FrequencyOfPill;
+        AmountPerUse = pill.AmountPerUse;
+        TimeToIngest = pill.TimeToIngest;
+        Meal = pill.Meal;
+        QuantityInBox = pill.QuantityInBox;
+        Leaflet = pill.Leaflet;    
+    }
 
     public void setPillId()
     {        

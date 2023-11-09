@@ -1,4 +1,5 @@
-﻿using PillCat.Models.Responses;
+﻿using PillCat.Models;
+using PillCat.Models.Responses;
 
 namespace PillCat.Services.Interfaces
 {
@@ -40,5 +41,62 @@ namespace PillCat.Services.Interfaces
         /// <param name="pillInfo"> Information of the pill to extract leaflet </param>
         /// <returns> PDF link to pill leaflet </returns>  
         Task<dynamic> GetLeaflet(dynamic pillInfo);
+
+        /// <summary>
+        /// Posts a pill
+        /// </summary>
+        /// <param name="pill"> The necessary data to create a pill </param>
+        /// <returns> The created pill data </returns>
+        Task<Pill> PostPill(Pill pill);
+
+        /// <summary>
+        /// Gets list of all pills registered in our app
+        /// </summary>
+        /// <returns> The list of all registered pills. </returns>
+        Task<IEnumerable<Pill>> GetPills();
+
+        /// <summary>
+        /// Gets list of all pills that should be taken in the current day
+        /// </summary>
+        /// <returns> The list of all pills for the day. </returns>
+        Task<IEnumerable<TodayPillsResponse>> GetTodayPills();
+
+        /// <summary>
+        /// Gets a specific pill
+        /// </summary>
+        /// <param name="name"> Name of the pill registered </param>
+        /// <returns> The specific requested pill that matches the name </returns>
+        Task<Pill> GetPill(string name);
+
+        /// <summary>
+        /// Updates a specific pill
+        /// </summary>
+        /// <param name="id"> ID of the Pill to be updated </param>
+        /// <param name="pill"> Pill to be updated </param>
+        /// <returns> The updated specific pill data </returns>
+        Task<Pill> PutPill(int id, Pill pill, Pill completePillInfo);
+
+        /// <summary>
+        /// Updates a specific pill
+        /// </summary>
+        /// <param name="pill"> Pill to be updated </param>
+        /// <returns> The updated specific pill data </returns>
+        Task<Pill> PutPillSimple(Pill pill);
+
+        /// <summary>
+        /// Delete specific pill
+        /// </summary>
+        /// <param name="id"> Id of the registered pill </param>
+        /// <returns> The result of the action </returns>
+        Task<bool> DeletePill(int id);
+
+        /// <summary>
+        /// Updates the usage record of a specific pill
+        /// </summary>
+        /// <param name="name"> Name of the registered pill </param>
+        /// <param name="usageState"> State to be set in the usage record of the pill </param>
+        /// <returns> The updated specific usage record of the pill </returns>
+
+        Task<List<UsageRecord>> PutUsageRecordOfPill(string name, bool usageState);
     }
 }
