@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
 using PillCat.Models.DbContexts;
+using System.Text.RegularExpressions;
 
 namespace PillCat.Controllers
 {
@@ -167,15 +169,54 @@ namespace PillCat.Controllers
         /// <returns> The text contained in the image and response status info </returns>  
 
         [HttpPost("imageTextFromUrl")]
-        public async Task<IActionResult> GetImageTextFromUrl([FromBody] string url)
+        public async Task<OcrInfo> GetImageTextFromUrl([FromBody] string url)
         {
-            var x = await _pillsFacade.GetImageTextFromUrl(url);
+            string resultPillNotFoundMessage = "{\"content\":[],\"totalElements\":0,\"totalPages\":0,\"last\":true,\"numberOfElements\":0,\"first\":true,\"sort\":null,\"size\":10,\"number\":0}";
+            var responseOCR = await _pillsFacade.GetImageTextFromUrl(url);
+            var leafletInfo = "";
+            var leafletInfoValid = "";
+            var quantComprimidos = "";
+            var pillName = "";
 
-            var pillInfo = await _pillsFacade.GetInformationFromPill("rivotril");
+            if (!responseOCR.Error) {
+                string[] textFromImage = (responseOCR.ParsedResults[0].ParsedText).Split(new[] { "\r\n" }, StringSplitOptions.None);
+                
+                foreach(String textPart in textFromImage) {
+                    var resultPill = await _pillsFacade.GetInformationFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
+                    if (!resultPill.Contains("totalElements\":0")) {
+                        leafletInfo = await _pillsFacade.GetLeafletFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
+                        if (leafletInfo.Length > 0) {
+                            leafletInfoValid = leafletInfo;
+                            pillName = Regex.Replace(textPart, "[^a-zA-Z0-9]", "");
+                        }
+                    }
+                    if (Regex.Replace(textPart, "[^a-zA-Z0-9]", "").Contains("comprimidos")) {
+                        quantComprimidos = FiltrarNumeros(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""), @"\d");
+                    }
+                }
+            }
 
-            var leafletInfo = await _pillsFacade.GetLeafletFromPill("rivotril");
+            OcrInfo finalInfo = new OcrInfo();
+            finalInfo.Name = pillName;
+            finalInfo.leafletLink = leafletInfoValid;
+            finalInfo.QuantityInBox = quantComprimidos;
 
-            return Ok(x);
+            return finalInfo;
+        }
+
+        static string FiltrarNumeros(string input, string pattern)
+        {
+            Regex regex = new Regex(pattern);
+            MatchCollection matches = regex.Matches(input);
+
+            // Concatenando os caracteres numÃ©ricos encontrados em uma string
+            string resultado = "";
+            foreach (Match match in matches)
+            {
+                resultado += match.Value;
+            }
+
+            return resultado;
         }
 
         /// <summary>
@@ -190,7 +231,7 @@ namespace PillCat.Controllers
 
         //    try
         //    {
-        //        // Verifique se o conteúdo da solicitação é um arquivo de imagem válido
+        //        // Verifique se o conteï¿½do da solicitaï¿½ï¿½o ï¿½ um arquivo de imagem vï¿½lido
         //        if (Request.HasFormContentType && Request.Form.Files.Count > 0)
         //        {
         //            var file = Request.Form.Files[0];
@@ -200,16 +241,16 @@ namespace PillCat.Controllers
         //                {
         //                    await file.CopyToAsync(ms);
 
-        //                    // Detecta o tipo de mídia da imagem usando a biblioteca MagicNumber
+        //                    // Detecta o tipo de mï¿½dia da imagem usando a biblioteca MagicNumber
         //                    var mimeType = MimeTypes.GetMimeType(Path.GetExtension(file.FileName));
 
         //                    if (mimeType == "image/jpeg" || mimeType == "image/png")
         //                    {
-        //                        Console.WriteLine("Imagem válida");
+        //                        Console.WriteLine("Imagem vï¿½lida");
                                
         //                        bytes = ms.ToArray();
 
-        //                        var imagePath = Path.Combine("C:\\Users\\cacag\\OneDrive\\Área de Trabalho\\Camila\\1. PUC\\6 Semestre\\TI - VI\\PillCat\\PillCat\\PillCat.Models", "Images", "LOGO.png");
+        //                        var imagePath = Path.Combine("C:\\Users\\cacag\\OneDrive\\ï¿½rea de Trabalho\\Camila\\1. PUC\\6 Semestre\\TI - VI\\PillCat\\PillCat\\PillCat.Models", "Images", "LOGO.png");
         //                        System.IO.File.WriteAllBytes(imagePath, bytes);                               
 
         //                        var getImageTextResult = await _pillsFacade.GetImageTextFromLocalFileUrl("http://localhost:57406/images/LOGO.png");
@@ -218,18 +259,18 @@ namespace PillCat.Controllers
         //                    }
         //                    else
         //                    {
-        //                        return BadRequest("A imagem não está em um formato suportado.");
+        //                        return BadRequest("A imagem nï¿½o estï¿½ em um formato suportado.");
         //                    }
         //                }
         //            }
         //            else
         //            {
-        //                return BadRequest("O arquivo de imagem está vazio.");
+        //                return BadRequest("O arquivo de imagem estï¿½ vazio.");
         //            }
         //        }
         //        else
         //        {
-        //            return BadRequest("Nenhum arquivo de imagem fornecido na solicitação.");
+        //            return BadRequest("Nenhum arquivo de imagem fornecido na solicitaï¿½ï¿½o.");
         //        }
         //    }
         //    catch (Exception ex)
@@ -244,9 +285,15 @@ namespace PillCat.Controllers
         /// <returns> The text contained in the image and response status info </returns>  
 
         [HttpPost("imageTextFromFile")]
-        public async Task<IActionResult> GetImageTextFromFile()
+        public async Task<OcrInfo> GetImageTextFromFile()
         {
             byte[] bytes;
+
+            OcrInfo finalInfo = new OcrInfo();
+            var leafletInfo = "";
+            var leafletInfoValid = "";
+            var quantComprimidos = "";
+            var pillName = "";
 
             try
             {
@@ -257,40 +304,90 @@ namespace PillCat.Controllers
                     {
                         using (var ms = new MemoryStream())
                         {
+
                             await file.CopyToAsync(ms);
 
                             var mimeType = MimeTypes.GetMimeType(Path.GetExtension(file.FileName));
 
                             if (mimeType == "image/jpeg" || mimeType == "image/png")
                             {
-                                Console.WriteLine("Imagem válida");
+                                Console.WriteLine("Imagem vÃ¡lida");
 
                                 bytes = ms.ToArray();
 
                                 string base64 = Convert.ToBase64String(bytes);
-                                var getImageTextResult = await _pillsFacade.GetImageTextFromFile(mimeType, $"data:image/png;base64,{base64}");                          
+                                var getImageTextResult = await _pillsFacade.GetImageTextFromFile(mimeType, $"data:image/png;base64,{base64}"); 
 
-                                return Ok(getImageTextResult);
+                                if (!getImageTextResult.Error) {
+                                    string[] textFromImage = (getImageTextResult.ParsedResults[0].ParsedText).Split(new[] { "\r\n" }, StringSplitOptions.None);
+                                    
+                                    foreach(String textPart in textFromImage) {
+                                        var resultPill = await _pillsFacade.GetInformationFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
+                                        if (!resultPill.Contains("totalElements\":0")) {
+                                            leafletInfo = await _pillsFacade.GetLeafletFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
+                                            if (leafletInfo.Length > 0) {
+                                                leafletInfoValid = leafletInfo;
+                                                pillName = Regex.Replace(textPart, "[^a-zA-Z0-9]", "");
+                                            }
+                                        }
+                                        if (Regex.Replace(textPart, "[^a-zA-Z0-9]", "").Contains("comprimidos")) {
+                                            quantComprimidos = FiltrarNumeros(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""), @"\d");
+                                        }
+                                    }
+                                }
+
+                                if (pillName == "" || leafletInfoValid == "" || quantComprimidos == "") {
+                                    finalInfo.Error = true;
+                                    finalInfo.Message = "NÃ£o foi possÃ­vel identificar o remedio!";
+                                } else {
+                                    finalInfo.Error = false;
+                                    finalInfo.Message = "RemÃ©dio encontrado!";
+                                }
+                                finalInfo.Name = pillName;
+                                finalInfo.leafletLink = leafletInfoValid;
+                                finalInfo.QuantityInBox = quantComprimidos;
+
+                                return finalInfo;                        
                             }
                             else
                             {
-                                return BadRequest("A imagem não está em um formato suportado.");
+                                finalInfo.Error = true;
+                                finalInfo.Message = "A imagem nÃ£o estÃ¡ em um formato suportado.";
+                                finalInfo.Name = pillName;
+                                finalInfo.leafletLink = leafletInfoValid;
+                                finalInfo.QuantityInBox = quantComprimidos;
+                                return finalInfo;
                             }
                         }
                     }
                     else
                     {
-                        return BadRequest("O arquivo de imagem está vazio.");
+                        finalInfo.Error = true;
+                        finalInfo.Message = "O arquivo de imagem estÃ¡ vazio.";
+                        finalInfo.Name = pillName;
+                        finalInfo.leafletLink = leafletInfoValid;
+                        finalInfo.QuantityInBox = quantComprimidos;
+                        return finalInfo;
                     }
                 }
                 else
                 {
-                    return BadRequest("Nenhum arquivo de imagem fornecido na solicitação.");
+                    finalInfo.Error = true;
+                    finalInfo.Message = "Nenhum arquivo de imagem fornecido na solicitaÃ§Ã£o.";
+                    finalInfo.Name = pillName;
+                    finalInfo.leafletLink = leafletInfoValid;
+                    finalInfo.QuantityInBox = quantComprimidos;
+                    return finalInfo;
                 }
             }
             catch (Exception ex)
             {
-                return BadRequest($"Erro ao receber ou processar a imagem: {ex.Message}");
+                    finalInfo.Error = true;
+                    finalInfo.Message = $"Erro ao receber ou processar a imagem: {ex.Message}";
+                    finalInfo.Name = pillName;
+                    finalInfo.leafletLink = leafletInfoValid;
+                    finalInfo.QuantityInBox = quantComprimidos;
+                    return finalInfo;
             }
         }
 
@@ -323,4 +420,15 @@ namespace PillCat.Controllers
             return (_context.Pills?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
+
+
+    public class OcrInfo
+    {
+        public Boolean Error { get; set; }
+        public String Message { get; set; }
+        public String Name { get; set; }
+        public String leafletLink { get; set; }
+        public String QuantityInBox { get; set; }
+    }
+
 }
