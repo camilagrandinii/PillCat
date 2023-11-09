@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
 using PillCat.Models.Responses;
@@ -13,6 +14,35 @@ namespace PillCat.Facades
         public PillsFacade(IPillsService pillsService) 
         {
             _pillsService = pillsService;
+        }
+
+        public async Task<Pill> PostPill(PostPillRequest pillRequest)
+        {            
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<PostPillRequest, Pill>();
+            });
+
+            var mapper = configuration.CreateMapper();
+
+            Pill enrichedPill = mapper.Map<Pill>(pillRequest);
+
+            enrichedPill.setPillId();
+
+            var leafletInfo = await GetLeafletFromPill(enrichedPill.Name);
+
+            enrichedPill.Leaflet = leafletInfo;
+
+            enrichedPill.UsageRecord = new List<UsageRecord>();
+
+            for (int i = 0; i < enrichedPill.PeriodOfTreatment.Amount; i += enrichedPill.FrequencyOfPill.IntervalPeriod)
+            {
+                enrichedPill.UsageRecord.Add(new UsageRecord { DateTime = DateTime.Today.AddDays(i), Pill = enrichedPill, PillUsed = false, UsageRecordId = Guid.NewGuid().GetHashCode() });
+            }
+
+            _pillsService.PostPill(enrichedPill);
+
+            return enrichedPill;
         }
 
         public async Task<Pill> EnrichPill(PostPillRequest pill)
@@ -47,9 +77,30 @@ namespace PillCat.Facades
             return await _pillsService.GetImageTextFromUrl(url);
         }
 
-        public async Task<OcrTextResponse> GetImageTextFromFile(string mimeType, string fileContent)
+        public async Task<OcrTextResponse> GetImageTextFromFile(IFormFile file)
         {
-            return await _pillsService.GetImageTextFromFile(mimeType, fileContent);
+            using (var ms = new MemoryStream())
+            {
+                await file.CopyToAsync(ms);
+
+                var mimeType = MimeTypes.GetMimeType(file.FileName);
+
+                if (mimeType != "image/jpeg" && mimeType != "image/png")
+                {
+                    throw new ArgumentException("A imagem não está em um formato suportado.");
+                }
+
+                Console.WriteLine("Imagem válida");
+
+                byte[] bytes = ms.ToArray();
+
+                string base64 = Convert.ToBase64String(bytes);
+                string fileContent = $"data:{mimeType};base64,{base64}";
+
+                var ocrTextResponse = await _pillsService.GetImageTextFromFile(mimeType, fileContent);
+
+                return ocrTextResponse;
+            }
         }
 
         public async Task<OcrTextResponse> GetImageTextFromLocalFileUrl(string url)
@@ -67,6 +118,43 @@ namespace PillCat.Facades
             var informationFromPillResult = await _pillsService.GetInformationFromPill(name);
             var url = await _pillsService.GetLeaflet(informationFromPillResult);
             return url;
+        }
+
+        public Task<IEnumerable<Pill>> GetPills()
+        {
+            return _pillsService.GetPills();
+        }
+
+        public Task<IEnumerable<TodayPillsResponse>> GetTodayPills()
+        {
+            return _pillsService.GetTodayPills();
+        }
+
+        public async Task<string> GetPillLeafLet(string name)
+        {
+            Pill pill = await _pillsService.GetPill(name);
+
+            return pill.Leaflet;
+        }
+
+        public Task<Pill> GetPill(string name)
+        {
+            return _pillsService.GetPill(name);
+        }
+
+        public Task<Pill> PutPill(int id, Pill pill)
+        {
+            return _pillsService.PutPill(id, pill);
+        }
+
+        public Task<bool> DeletePill(int id)
+        {
+            return _pillsService.DeletePill(id);
+        }
+
+        public Task<List<UsageRecord>> PutUsageRecordOfPill(string name, bool usageState)
+        {
+            return _pillsService.PutUsageRecordOfPill(name, usageState);
         }
     }
 }
