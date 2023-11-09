@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PillCat.Models;
 using PillCat.Models.DbContexts;
 using PillCat.Models.Responses;
@@ -113,8 +114,36 @@ namespace PillCat.Services
             return pill;
         }
 
-        public async Task<Pill> PutPill(Pill pill)
-        {           
+        public async Task<Pill> PutPill(int id, Pill pill, Pill completePillInfo)
+        {
+            if (id != pill.Id)
+            {
+                return null;
+            }
+
+            _context.Entry(completePillInfo).CurrentValues.SetValues(pill);
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!PillExists(id))
+                {
+                    return null;
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return pill;
+        }
+
+        public async Task<Pill> PutPillSimple(Pill pill)
+        {
             _context.Entry(pill).State = EntityState.Modified;
 
             try
@@ -128,6 +157,7 @@ namespace PillCat.Services
 
             return pill;
         }
+
 
         public async Task<List<UsageRecord>> PutUsageRecordOfPill(string name, bool usageState)
         {

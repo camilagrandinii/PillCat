@@ -16,34 +16,36 @@ namespace PillCat.Controllers
         }
 
         /// <summary>
-        /// Gets list of all pills registered in our app
+        /// Posts a pill
         /// </summary>
-        /// <returns> The list of all registered pills. </returns>
-        [HttpGet]
-        public ActionResult<IEnumerable<Pill>> GetPills()
+        /// <param name="pill"> The necessary data to create a pill </param>
+        /// <returns> The created pill data </returns>
+        [HttpPost]
+        public async Task<ActionResult<Pill>> PostPill([FromBody] PostPillRequest pill)
         {
-            return Ok(_pillsFacade.GetPills());
+            return Ok(await _pillsFacade.PostPill(pill));
         }
 
         /// <summary>
-        /// Gets list of all pills that should be taken in the current day
+        /// Updated a specific pill
         /// </summary>
-        /// <returns> The list of all pills for the day. </returns>
-        [HttpGet("today-pills")]
-        public ActionResult<IEnumerable<TodayPillsResponse>> GetTodayPills()
+        /// <param name="pill"> Content of the updated pill </param>
+        /// <returns> The updated specific pill data </returns>
+        [HttpPut()]
+        public async Task<IActionResult> PutPill(PostPillRequest pill)
         {
-            return Ok(_pillsFacade.GetTodayPills());
+            return Ok(await _pillsFacade.PutPill(pill));
         }
 
         /// <summary>
-        /// Gets a specific pill's leaflet that can be opened online
+        /// Updates the usage record of a specific pill
         /// </summary>
-        /// <param name="name"> Name of the pill registered </param>
-        /// <returns> The leaflet of the pill that matches the name </returns>
-        [HttpGet("specific-leaflet")]
-        public async Task<ActionResult<string>> GetPillLeafLet(string name)
+        /// <param name="putUsageRecordRequest"> content needed to update the pill's usage record (name and usageState) </param>
+        /// <returns> The updated specific usage record of the pill </returns>
+        [HttpPut("pill-usage-record")]
+        public async Task<IActionResult> PutUsageRecordOfPill([FromBody] PutUsageRecordRequest putUsageRecordRequest)
         {
-            return Ok(await _pillsFacade.GetPillLeafLet(name));
+            return Ok(await _pillsFacade.PutUsageRecordOfPill(putUsageRecordRequest.Name, putUsageRecordRequest.UsageState));
         }
 
         /// <summary>
@@ -58,38 +60,47 @@ namespace PillCat.Controllers
         }
 
         /// <summary>
-        /// Updated a specific pill
+        /// Gets a specific pill's leaflet that can be opened online
+        /// </summary>
+        /// <param name="name"> Name of the pill registered </param>
+        /// <returns> The leaflet of the pill that matches the name </returns>
+        [HttpGet("specific-leaflet")]
+        public async Task<ActionResult<string>> GetPillLeafLet(string name)
+        {
+            return Ok(await _pillsFacade.GetPillLeafLet(name));
+        }
+
+        /// <summary>
+        /// Gets list of all pills that should be taken in the current day
+        /// </summary>
+        /// <returns> The list of all pills for the day. </returns>
+        [HttpGet("today-pills")]
+        public ActionResult<IEnumerable<TodayPillsResponse>> GetTodayPills()
+        {
+            return Ok(_pillsFacade.GetTodayPills());
+        }
+
+        /// <summary>
+        /// Gets list of all pills registered in our app
+        /// </summary>
+        /// <returns> The list of all registered pills. </returns>
+        [HttpGet]
+        public ActionResult<IEnumerable<Pill>> GetPills()
+        {
+            return Ok(_pillsFacade.GetPills());
+        }
+
+        /// <summary>
+        /// Delete specific pill
         /// </summary>
         /// <param name="id"> Id of the registered pill </param>
-        /// <returns> The updated specific pill data </returns>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutPill(Pill pill)
+        /// <returns> The result of the action </returns>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletePill(int id)
         {
-            return Ok(await _pillsFacade.PutPill(pill));
+            return Ok(await _pillsFacade.DeletePill(id));
         }
 
-        /// <summary>
-        /// Updates the usage record of a specific pill
-        /// </summary>
-        /// <param name="name"> Name of the registered pill </param>
-        /// <param name="usageState"> State to be set in the usage record of the pill </param>
-        /// <returns> The updated specific usage record of the pill </returns>
-        [HttpPut("pill-usage-record")]
-        public async Task<IActionResult> PutUsageRecordOfPill([FromBody] string name, bool usageState)
-        {
-            return Ok(await _pillsFacade.PutUsageRecordOfPill(name, usageState));
-        }
-
-        /// <summary>
-        /// Posts a pill
-        /// </summary>
-        /// <param name="pill"> The necessary data to create a pill </param>
-        /// <returns> The created pill data </returns>
-        [HttpPost]
-        public async Task<ActionResult<Pill>> PostPill([FromBody] PostPillRequest pill)
-        {
-            return Ok(await _pillsFacade.PostPill(pill));
-        }
 
         /// <summary>
         /// Extracts image text using OCR API from the url image given
@@ -140,17 +151,6 @@ namespace PillCat.Controllers
             {
                 return BadRequest($"Erro ao receber ou processar a imagem: {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// Delete specific pill
-        /// </summary>
-        /// <param name="id"> Id of the registered pill </param>
-        /// <returns> The result of the action </returns>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePill(int id)
-        {
-            return Ok(await _pillsFacade.DeletePill(id));
         }
     }
 }

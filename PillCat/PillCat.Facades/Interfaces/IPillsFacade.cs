@@ -86,9 +86,10 @@ namespace PillCat.Facades.Interfaces
         /// <summary>
         /// Updated a specific pill
         /// </summary>
-        /// <param name="pill"> Content of the registered pill </param>
+        /// <param name="id"> ID of the Pill to be updated </param>
+        /// <param name="pill"> Pill to be updated </param>
         /// <returns> The updated specific pill data </returns>
-        Task<Pill> PutPill(Pill pill);
+        Task<Pill> PutPill(PostPillRequest pill);
 
         /// <summary>
         /// Delete specific pill

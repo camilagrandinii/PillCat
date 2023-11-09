@@ -45,16 +45,9 @@ namespace PillCat.Facades
             return enrichedPill;
         }
 
-        public async Task<Pill> EnrichPill(PostPillRequest pill)
+        public async Task<Pill> EnrichPill(PostPillRequest postPillRequest)
         {
-            var configuration = new MapperConfiguration(cfg =>
-            {
-                cfg.CreateMap<PostPillRequest, Pill>();
-            });
-
-            var mapper = configuration.CreateMapper();
-
-            Pill enrichedPill = mapper.Map<Pill>(pill);
+            var enrichedPill = MapPostRequestToPill(postPillRequest);
 
             enrichedPill.setPillId();
 
@@ -64,7 +57,7 @@ namespace PillCat.Facades
 
             enrichedPill.UsageRecord = new List<UsageRecord>();
 
-            for (int i = 0; i < pill.PeriodOfTreatment.Amount; i += enrichedPill.FrequencyOfPill.IntervalPeriod)
+            for (int i = 0; i < enrichedPill.PeriodOfTreatment.Amount; i += enrichedPill.FrequencyOfPill.IntervalPeriod)
             {
                 enrichedPill.UsageRecord.Add(new UsageRecord { DateTime = DateTime.Today.AddDays(i), Pill = enrichedPill, PillUsed = false, UsageRecordId = Guid.NewGuid().GetHashCode() });
             }
@@ -101,7 +94,8 @@ namespace PillCat.Facades
 
                 Pill pill = await _pillsService.GetPill("rivotril");
                 pill.QuantityInBox = 3;
-                await _pillsService.PutPill(pill);
+
+                await _pillsService.PutPillSimple(pill);
 
                 return ocrTextResponse;
             }
@@ -146,9 +140,14 @@ namespace PillCat.Facades
             return _pillsService.GetPill(name);
         }
 
-        public Task<Pill> PutPill(Pill pill)
+        public async Task<Pill> PutPill(PostPillRequest updatePillRequest)
         {
-            return _pillsService.PutPill(pill);
+            Pill completePillInfo = await _pillsService.GetPill(updatePillRequest.Name);
+
+            Pill pill = MapPostRequestToPill(updatePillRequest);
+            pill.Id = completePillInfo.Id;
+
+            return await _pillsService.PutPill(pill.Id, pill, completePillInfo);
         }
 
         public Task<bool> DeletePill(int id)
@@ -159,6 +158,20 @@ namespace PillCat.Facades
         public Task<List<UsageRecord>> PutUsageRecordOfPill(string name, bool usageState)
         {
             return _pillsService.PutUsageRecordOfPill(name, usageState);
+        }
+
+        private Pill MapPostRequestToPill(PostPillRequest postPillRequest)
+        {
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<PostPillRequest, Pill>();
+            });
+
+            var mapper = configuration.CreateMapper();
+
+            Pill enrichedPill = mapper.Map<Pill>(postPillRequest);
+
+            return enrichedPill;
         }
     }
 }

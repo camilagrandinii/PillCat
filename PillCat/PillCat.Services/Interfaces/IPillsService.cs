@@ -69,11 +69,19 @@ namespace PillCat.Services.Interfaces
         Task<Pill> GetPill(string name);
 
         /// <summary>
-        /// Updated a specific pill
+        /// Updates a specific pill
+        /// </summary>
+        /// <param name="id"> ID of the Pill to be updated </param>
+        /// <param name="pill"> Pill to be updated </param>
+        /// <returns> The updated specific pill data </returns>
+        Task<Pill> PutPill(int id, Pill pill, Pill completePillInfo);
+
+        /// <summary>
+        /// Updates a specific pill
         /// </summary>
         /// <param name="pill"> Pill to be updated </param>
         /// <returns> The updated specific pill data </returns>
-        Task<Pill> PutPill(Pill pill);
+        Task<Pill> PutPillSimple(Pill pill);
 
         /// <summary>
         /// Delete specific pill
