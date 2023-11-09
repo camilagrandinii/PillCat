@@ -26,7 +26,7 @@ namespace PillCat.Facades.Interfaces
         /// </summary>
         /// <param name="file"> file </param>     
         /// <returns> The text contained in the image and response status info </returns>  
-        Task<OcrTextResponse> GetImageTextFromFile(IFormFile file);
+        Task<OcrInfo> GetImageTextFromFile(IFormFile file);
 
         /// <summary>
         /// Extracts image text using OCR API from the local file url image given

@@ -126,30 +126,42 @@ namespace PillCat.Controllers
         /// <returns> The text contained in the image and response status info </returns>  
 
         [HttpPost("imageTextFromFile")]
-        public async Task<IActionResult> GetImageTextFromFile()
+        public async Task<ActionResult<OcrInfo>> GetImageTextFromFile()
         {
+            OcrInfo finalInfo = new OcrInfo();
+
             try
             {
                 if (Request.HasFormContentType && Request.Form.Files.Count > 0)
                 {
                     var file = Request.Form.Files[0];
+
                     if (file.Length > 0)
                     {
-                        return Ok(await _pillsFacade.GetImageTextFromFile(file));
+                        finalInfo = await _pillsFacade.GetImageTextFromFile(file);
+
+                        return finalInfo;
                     }
+
                     else
                     {
-                        return BadRequest("O arquivo de imagem está vazio.");
+                        finalInfo.Error = true;
+                        finalInfo.Message = "O arquivo de imagem está vazio.";
+                        return finalInfo;
                     }
                 }
                 else
                 {
-                    return BadRequest("Nenhum arquivo de imagem fornecido na solicitação.");
+                    finalInfo.Error = true;
+                    finalInfo.Message = "Nenhum arquivo de imagem fornecido na solicitação.";
+                    return finalInfo;
                 }
             }
             catch (Exception ex)
             {
-                return BadRequest($"Erro ao receber ou processar a imagem: {ex.Message}");
+                finalInfo.Error = true;
+                finalInfo.Message = $"Erro ao receber ou processar a imagem: {ex.Message}";
+                return finalInfo;
             }
         }
     }

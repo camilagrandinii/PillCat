@@ -4,6 +4,7 @@ using PillCat.Facades.Interfaces;
 using PillCat.Models;
 using PillCat.Models.Responses;
 using PillCat.Services.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace PillCat.Facades
 {
@@ -70,8 +71,14 @@ namespace PillCat.Facades
             return await _pillsService.GetImageTextFromUrl(url);
         }
 
-        public async Task<OcrTextResponse> GetImageTextFromFile(IFormFile file)
+        public async Task<OcrInfo> GetImageTextFromFile(IFormFile file)
         {
+            OcrInfo finalInfo = new OcrInfo();
+            var leafletInfo = "";
+            var leafletInfoValid = "";
+            var quantComprimidos = "";
+            var pillName = "";
+
             using (var ms = new MemoryStream())
             {
                 await file.CopyToAsync(ms);
@@ -90,14 +97,74 @@ namespace PillCat.Facades
                 string base64 = Convert.ToBase64String(bytes);
                 string fileContent = $"data:{mimeType};base64,{base64}";
 
-                var ocrTextResponse = await _pillsService.GetImageTextFromFile(mimeType, fileContent);
+                var getImageTextResult = await _pillsService.GetImageTextFromFile(mimeType, fileContent);
+
+                if (!getImageTextResult.Error)
+                {
+                    string[] textFromImage = (getImageTextResult.ParsedResults[0].ParsedText).Split(new[] { "\r\n" }, StringSplitOptions.None);
+
+                    foreach (String textPart in textFromImage)
+                    {
+                        var resultPill = await GetInformationFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
+
+                        if (!resultPill.Contains("totalElements\":0"))
+                        {
+                            leafletInfo = await GetLeafletFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
+
+                            if (leafletInfo.Length > 0)
+                            {
+                                leafletInfoValid = leafletInfo;
+                                pillName = Regex.Replace(textPart, "[^a-zA-Z0-9]", "");
+                            }
+                        }
+                        if (Regex.Replace(textPart, "[^a-zA-Z0-9]", "").Contains("comprimidos"))
+                        {
+                            quantComprimidos = FilterNumbers(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""), @"\d");
+                        }
+                    }
+                }
+                else
+                {
+                    finalInfo.Error = true;
+                    finalInfo.Message = "A imagem não está em um formato suportado.";
+                    finalInfo.Name = pillName;
+                    finalInfo.leafletLink = leafletInfoValid;
+                    finalInfo.QuantityInBox = quantComprimidos;
+                    return finalInfo;
+                }
+
+                if (pillName == "" || leafletInfoValid == "" || quantComprimidos == "")
+                {
+                    finalInfo.Error = true;
+                    finalInfo.Message = "Não foi possível identificar o remedio!";
+                }
+                else
+                {
+                    finalInfo.Error = false;
+                    finalInfo.Message = "Remédio encontrado!";
+                }
+
+                finalInfo.Name = pillName;
+                finalInfo.leafletLink = leafletInfoValid;
+                finalInfo.QuantityInBox = quantComprimidos;
+
+                int aumountOfPillsInt = int.Parse(quantComprimidos);
+
+                // TODO:
+                // Extrair o nome do remédio para procura-lo no banco de dados por meio do nome
+                // Substituir o placeholder "rivotril" por uma variável que contenha o nome do remédio
+                // Antes usar o método GetPill("rivotril"), faça um ToLowerCase na string em questão
+
+                // No teste que eu fiz ele não conseguiu extrair o nome do remédio, MAS isso não pode acontecer
+                // Tenta resolver isso please <3
 
                 Pill pill = await _pillsService.GetPill("rivotril");
-                pill.QuantityInBox = 3;
+
+                pill.QuantityInBox = aumountOfPillsInt;
 
                 await _pillsService.PutPillSimple(pill);
 
-                return ocrTextResponse;
+                return finalInfo;
             }
         }
 
@@ -158,6 +225,20 @@ namespace PillCat.Facades
         public Task<List<UsageRecord>> PutUsageRecordOfPill(string name, bool usageState)
         {
             return _pillsService.PutUsageRecordOfPill(name, usageState);
+        }
+
+        private string FilterNumbers(string input, string pattern)
+        {
+            Regex regex = new Regex(pattern);
+            MatchCollection matches = regex.Matches(input);
+
+            string resultado = "";
+            foreach (Match match in matches)
+            {
+                resultado += match.Value;
+            }
+
+            return resultado;
         }
 
         private Pill MapPostRequestToPill(PostPillRequest postPillRequest)
