@@ -181,7 +181,7 @@ namespace PillCat.Facades
 
             string mimeType = ObtainMimeType(base64File.Image);
 
-            var fileContent = base64File.Image.StartsWith("data:") ? base64File.Image : $"data:{mimeType};base64,{base64File}";
+            var fileContent = base64File.Image.StartsWith("data:") ? base64File.Image : $"data:image/png;base64,{base64File.Image}";
 
             var getImageTextResult = await _pillsService.GetImageTextFromFile(mimeType, fileContent);
 
