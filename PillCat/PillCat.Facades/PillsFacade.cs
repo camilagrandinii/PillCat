@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
+using PillCat.Models.Requests;
 using PillCat.Models.Responses;
 using PillCat.Services.Interfaces;
 using System.Text.RegularExpressions;
@@ -19,6 +20,8 @@ namespace PillCat.Facades
 
         public async Task<Pill> PostPill(PostPillRequest pillRequest)
         {
+            pillRequest.Name = pillRequest.Name.ToLower();
+
             var configuration = new MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<PostPillRequest, Pill>();
@@ -168,6 +171,83 @@ namespace PillCat.Facades
             }
         }
 
+        public async Task<OcrInfo> GetImageTextFromBase64String(GetImageTextRequest base64File)
+        {
+            OcrInfo finalInfo = new OcrInfo();
+            var leafletInfo = "";
+            var leafletInfoValid = "";
+            var quantComprimidos = "";
+            var pillName = "";
+
+            string mimeType = ObtainMimeType(base64File.Image);
+
+            var fileContent = base64File.Image.StartsWith("data:") ? base64File.Image : $"data:{mimeType};base64,{base64File}";
+
+            var getImageTextResult = await _pillsService.GetImageTextFromFile(mimeType, fileContent);
+
+            if (!getImageTextResult.Error)
+            {
+                string[] textFromImage = (getImageTextResult.ParsedResults[0].ParsedText).Split(new[] { "\r\n" }, StringSplitOptions.None);
+
+                foreach (String textPart in textFromImage)
+                {
+                    var resultPill = await GetInformationFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
+
+                    if (!resultPill.Contains("totalElements\":0"))
+                    {
+                        leafletInfo = await GetLeafletFromPill(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""));
+
+                        if (leafletInfo.Length > 0)
+                        {
+                            leafletInfoValid = leafletInfo;
+
+                            if (string.IsNullOrEmpty(pillName)){ 
+                                pillName = Regex.Replace(textPart, "[^a-zA-Z0-9]", "");
+                            }
+                        }
+                    }
+                    if (Regex.Replace(textPart, "[^a-zA-Z0-9]", "").Contains("comprimidos"))
+                    {
+                        quantComprimidos = FilterNumbers(Regex.Replace(textPart, "[^a-zA-Z0-9]", ""), @"\d");
+                    }
+                }
+            }
+            else
+            {
+                finalInfo.Error = true;
+                finalInfo.Message = "A imagem não está em um formato suportado.";
+                finalInfo.Name = pillName;
+                finalInfo.leafletLink = leafletInfoValid;
+                finalInfo.QuantityInBox = quantComprimidos;
+                return finalInfo;
+            }
+
+            if (pillName == "" || leafletInfoValid == "" || quantComprimidos == "")
+            {
+                finalInfo.Error = true;
+                finalInfo.Message = "Não foi possível identificar o remedio!";
+            }
+            else
+            {
+                finalInfo.Error = false;
+                finalInfo.Message = "Remédio encontrado!";
+            }
+
+            int aumountOfPillsInt = int.Parse(quantComprimidos);
+
+            finalInfo.Name = pillName.ToLower();
+            finalInfo.leafletLink = leafletInfoValid;
+            finalInfo.QuantityInBox = aumountOfPillsInt.ToString();
+
+            Pill pill = await _pillsService.GetPill(finalInfo.Name);
+
+            pill.QuantityInBox = aumountOfPillsInt;
+
+            await _pillsService.PutPillSimple(pill);
+
+            return finalInfo;
+        }
+
         public async Task<OcrTextResponse> GetImageTextFromLocalFileUrl(string url)
         {
             return await _pillsService.GetImageTextFromLocalFileUrl(url);
@@ -254,5 +334,23 @@ namespace PillCat.Facades
 
             return enrichedPill;
         }
+
+        private string ObtainMimeType(string base64File)
+        {
+            int index = base64File.IndexOf(';');
+
+            if (index != -1)
+            {
+                string fileTypeSubstring = base64File.Substring(5, index - 5);
+
+                if (!string.IsNullOrEmpty(fileTypeSubstring))
+                {
+                    return fileTypeSubstring;
+                }
+            }
+
+            return string.Empty;
+        }
+
     }
 }

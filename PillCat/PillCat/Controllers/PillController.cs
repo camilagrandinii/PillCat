@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PillCat.Facades.Interfaces;
 using PillCat.Models;
+using PillCat.Models.Requests;
 
 namespace PillCat.Controllers
 {
@@ -163,6 +164,24 @@ namespace PillCat.Controllers
                 finalInfo.Message = $"Erro ao receber ou processar a imagem: {ex.Message}";
                 return finalInfo;
             }
+        }
+
+
+        /// <summary>
+        /// Extracts image text using OCR API from the base 64 string image given
+        /// </summary>       
+        /// <returns> The text contained in the base 64 image and response status info </returns>  
+        [HttpPost("imageTextFromBase64String")]
+        public async Task<ActionResult<OcrInfo>> GetImageTextFromBase64String([FromBody] GetImageTextRequest imageRequest)
+        {
+            if(imageRequest.Image != null)
+            {
+                var finalInfo = await _pillsFacade.GetImageTextFromBase64String(imageRequest);
+
+                return finalInfo;
+            }
+
+            return StatusCode(500, $"Erro ao carregar a imagem");
         }
     }
 }

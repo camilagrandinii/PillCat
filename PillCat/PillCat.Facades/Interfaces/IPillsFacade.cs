@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PillCat.Models;
+using PillCat.Models.Requests;
 using PillCat.Models.Responses;
 
 namespace PillCat.Facades.Interfaces
@@ -27,6 +28,13 @@ namespace PillCat.Facades.Interfaces
         /// <param name="file"> file </param>     
         /// <returns> The text contained in the image and response status info </returns>  
         Task<OcrInfo> GetImageTextFromFile(IFormFile file);
+
+        /// <summary>
+        /// Extracts image text using OCR API from the base 64 string image given
+        /// </summary>     
+        /// <param name="file"> base64 string of the image </param>
+        /// <returns> The text contained in the base 64 image and response status info </returns>  
+        Task<OcrInfo> GetImageTextFromBase64String(GetImageTextRequest file);
 
         /// <summary>
         /// Extracts image text using OCR API from the local file url image given
