@@ -97,14 +97,14 @@ namespace PillCat.Services
             var pills = await _context.Pills.ToListAsync();
             Pill pill = null;
 
-            foreach (var u in pills)
+            Parallel.ForEach(pills, (u, state) =>
             {
                 if (u.Name == name)
                 {
                     pill = u;
-                    break;
+                    state.Break();
                 }
-            }
+            });
 
             if (pill == null)
             {
