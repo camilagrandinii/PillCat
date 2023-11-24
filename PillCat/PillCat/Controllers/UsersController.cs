@@ -2,6 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using PillCat.Models;
 using PillCat.Models.DbContexts;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PillCat.Controllers
 {
@@ -39,13 +42,14 @@ namespace PillCat.Controllers
             
             User user = null;
 
-            foreach (User u in users)
+            Parallel.ForEach(users, (u, state)  =>
             {
                 if (u.Email == email)
                 {
-                    user = u; break;
+                    user = u; 
+                    state.Break();
                 }
-            }
+            });
 
             if (user == null)
             {
